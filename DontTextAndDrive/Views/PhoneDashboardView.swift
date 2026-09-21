@@ -3,13 +3,6 @@ import SwiftUI
 struct PhoneDashboardView: View {
     var engine: GameEngine
     
-    // Keyboard Mode: false = In-Game Arcade Keyboard (compact), true = Apple Native Keyboard
-    @AppStorage("useNativeKeyboard") private var useNativeKeyboard: Bool = false
-    
-    // Focus state for Apple's Native Keyboard
-    @FocusState private var isNativeKeyboardFocused: Bool
-    @State private var nativeInputBuffer: String = ""
-    
     // Standard iOS Keyboard layout for arcade mode
     private let row1: [Character] = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"]
     private let row2: [Character] = ["A", "S", "D", "F", "G", "H", "J", "K", "L"]
@@ -42,28 +35,6 @@ struct PhoneDashboardView: View {
                     }
                     
                     Spacer()
-                    
-                    // Keyboard Mode Toggle
-                    Button(action: {
-                        useNativeKeyboard.toggle()
-                        if useNativeKeyboard {
-                            isNativeKeyboardFocused = true
-                        } else {
-                            isNativeKeyboardFocused = false
-                        }
-                    }) {
-                        HStack(spacing: 2) {
-                            Image(systemName: useNativeKeyboard ? "apple.logo" : "gamecontroller.fill")
-                                .font(.system(size: 9))
-                            Text(useNativeKeyboard ? "Apple" : "Arcade")
-                                .font(.system(size: 8, weight: .black))
-                        }
-                        .foregroundColor(.cyan)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 3)
-                        .background(Color.cyan.opacity(0.2))
-                        .cornerRadius(6)
-                    }
                     
                     // Urgency Timer Pill
                     HStack(spacing: 3) {
@@ -126,15 +97,15 @@ struct PhoneDashboardView: View {
                     
                     Spacer()
                     
-                    // Quick Sparkle Auto-type / Auto-fix Assist
+                    // Quick Sparkle Auto-type Assist
                     Button(action: {
                         engine.autoTypeNextChar()
                     }) {
-                        Image(systemName: engine.hasTypingError ? "delete.left.fill" : "sparkles")
+                        Image(systemName: "sparkles")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
                             .padding(4)
-                            .background(engine.hasTypingError ? Color.red.opacity(0.6) : Color.cyan.opacity(0.4))
+                            .background(Color.cyan.opacity(0.4))
                             .clipShape(Circle())
                     }
                 }
@@ -154,195 +125,130 @@ struct PhoneDashboardView: View {
                     x: engine.typingErrorShake > 0 ? CGFloat.random(in: -engine.typingErrorShake * 4...engine.typingErrorShake * 4) : 0
                 )
                 .padding(.horizontal, 6)
-                .onTapGesture {
-                    if useNativeKeyboard {
-                        isNativeKeyboardFocused = true
+            }
+            
+            // 3. Compact Keyboard Section (Always Active)
+            VStack(spacing: 3) {
+                // Row 1: Q W E R T Y U I O P
+                HStack(spacing: 3) {
+                    ForEach(row1, id: \.self) { char in
+                        KeyButton(
+                            char: char,
+                            isHighlighted: isNextTarget(char),
+                            action: { engine.handleKeyInput(char) }
+                        )
                     }
                 }
                 
-                // Native Hidden TextField
-                if useNativeKeyboard {
-                    TextField("", text: $nativeInputBuffer)
-                        .focused($isNativeKeyboardFocused)
-                        .autocorrectionDisabled(true)
-                        .disableAutocapitalization()
-                        .submitLabel(.send)
-                        .onSubmit {
-                            engine.sendCurrentMessage()
-                            nativeInputBuffer = ""
-                        }
-                        .onChange(of: nativeInputBuffer) { oldValue, newValue in
-                            if newValue.count > oldValue.count {
-                                if let lastChar = newValue.last {
-                                    engine.handleKeyInput(lastChar)
-                                }
-                            } else if newValue.count < oldValue.count {
-                                engine.handleBackspace()
-                            }
-                        }
-                        .frame(width: 1, height: 1)
-                        .opacity(0.01)
+                // Row 2: A S D F G H J K L
+                HStack(spacing: 3) {
+                    Spacer(minLength: 4)
+                    ForEach(row2, id: \.self) { char in
+                        KeyButton(
+                            char: char,
+                            isHighlighted: isNextTarget(char),
+                            action: { engine.handleKeyInput(char) }
+                        )
+                    }
+                    Spacer(minLength: 4)
                 }
-            }
-            
-            // 3. Compact Keyboard Section
-            if !useNativeKeyboard {
-                VStack(spacing: 3) {
-                    // Row 1: Q W E R T Y U I O P
-                    HStack(spacing: 3) {
-                        ForEach(row1, id: \.self) { char in
-                            KeyButton(
-                                char: char,
-                                isHighlighted: isNextTarget(char),
-                                action: { engine.handleKeyInput(char) }
-                            )
-                        }
+                
+                // Row 3: Shift + Z X C V B N M + Delete Key
+                HStack(spacing: 3) {
+                    // Left Shift / Caps icon
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(Color.white.opacity(0.12))
+                            .frame(width: 34, height: 28)
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.white.opacity(0.7))
                     }
                     
-                    // Row 2: A S D F G H J K L
-                    HStack(spacing: 3) {
-                        Spacer(minLength: 4)
-                        ForEach(row2, id: \.self) { char in
-                            KeyButton(
-                                char: char,
-                                isHighlighted: isNextTarget(char),
-                                action: { engine.handleKeyInput(char) }
-                            )
-                        }
-                        Spacer(minLength: 4)
+                    ForEach(row3, id: \.self) { char in
+                        KeyButton(
+                            char: char,
+                            isHighlighted: isNextTarget(char),
+                            action: { engine.handleKeyInput(char) }
+                        )
                     }
                     
-                    // Row 3: Shift + Z X C V B N M + Delete Key
-                    HStack(spacing: 3) {
-                        // Left Shift / Caps icon
+                    // Delete / Backspace Button beside M
+                    Button(action: {
+                        engine.handleBackspace()
+                    }) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 5)
-                                .fill(Color.white.opacity(0.12))
+                                .fill(engine.hasTypingError ? Color.red.opacity(0.55) : Color.white.opacity(0.18))
                                 .frame(width: 34, height: 28)
-                            Image(systemName: "arrow.up")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.white.opacity(0.7))
-                        }
-                        
-                        ForEach(row3, id: \.self) { char in
-                            KeyButton(
-                                char: char,
-                                isHighlighted: isNextTarget(char),
-                                action: { engine.handleKeyInput(char) }
-                            )
-                        }
-                        
-                        // Delete / Backspace Button beside M (Glows Red on Error)
-                        Button(action: {
-                            engine.handleBackspace()
-                        }) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 5)
-                                    .fill(engine.hasTypingError ? Color.red.opacity(0.55) : Color.white.opacity(0.18))
-                                    .frame(width: 34, height: 28)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 5)
-                                            .stroke(engine.hasTypingError ? Color.red : Color.clear, lineWidth: 1.5)
-                                    )
-                                Image(systemName: "delete.backward.fill")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(engine.hasTypingError ? .yellow : .white)
-                            }
-                            .shadow(color: engine.hasTypingError ? .red.opacity(0.7) : .clear, radius: 4)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    
-                    // Row 4: Dedicated Bottom Row with Long Spacebar & SEND Button
-                    HStack(spacing: 4) {
-                        // Quick 123 / Sparkle Assist button on bottom left
-                        Button(action: {
-                            engine.autoTypeNextChar()
-                        }) {
-                            Text("123")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white.opacity(0.7))
-                                .frame(width: 38, height: 28)
-                                .background(Color.white.opacity(0.12))
-                                .cornerRadius(5)
-                        }
-                        
-                        // Long Spacebar (Wide button)
-                        Button(action: {
-                            engine.handleKeyInput(" ")
-                        }) {
-                            Text("space")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity, minHeight: 28)
-                                .background(isNextTarget(" ") ? Color.cyan.opacity(0.8) : Color.white.opacity(0.2))
-                                .cornerRadius(5)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 5)
-                                        .stroke(isNextTarget(" ") ? Color.white : Color.clear, lineWidth: 1.2)
+                                        .stroke(engine.hasTypingError ? Color.red : Color.clear, lineWidth: 1.5)
                                 )
-                                .shadow(color: isNextTarget(" ") ? .cyan.opacity(0.6) : .clear, radius: 4)
+                            Image(systemName: "delete.backward.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(engine.hasTypingError ? .yellow : .white)
                         }
-                        
-                        // SEND Action Button on bottom right
-                        Button(action: {
-                            engine.sendCurrentMessage()
-                        }) {
-                            HStack(spacing: 3) {
-                                Text("SEND")
-                                    .font(.system(size: 11, weight: .heavy))
-                                Image(systemName: engine.isTextCompleteAndValid ? "checkmark.circle.fill" : "arrow.up.circle.fill")
-                                    .font(.system(size: 12))
-                            }
-                            .foregroundColor(.white)
-                            .frame(width: 64, height: 28)
-                            .background(
-                                engine.isTextCompleteAndValid ? Color.green :
-                                (isSendReady ? Color.blue : Color.gray.opacity(0.35))
-                            )
-                            .cornerRadius(5)
-                            .scaleEffect(isSendReady ? 1.05 : 1.0)
-                            .animation(.spring(response: 0.2), value: isSendReady)
-                        }
+                        .shadow(color: engine.hasTypingError ? .red.opacity(0.7) : .clear, radius: 4)
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 4)
-                .padding(.bottom, 4)
-            } else {
-                // Native Keyboard Banner
-                HStack(spacing: 6) {
+                
+                // Row 4: Dedicated Bottom Row with Long Spacebar & SEND Button
+                HStack(spacing: 4) {
+                    // Quick 123 / Sparkle Assist button on bottom left
                     Button(action: {
-                        isNativeKeyboardFocused = true
+                        engine.autoTypeNextChar()
                     }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "keyboard.fill")
-                                .foregroundColor(.cyan)
-                            Text(isNativeKeyboardFocused ? "Apple Keyboard Active (Type on iOS keyboard)" : "Tap to Open iOS Keyboard")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(6)
+                        Text("123")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white.opacity(0.7))
+                            .frame(width: 38, height: 28)
+                            .background(Color.white.opacity(0.12))
+                            .cornerRadius(5)
                     }
                     
+                    // Long Spacebar (Wide button)
+                    Button(action: {
+                        engine.handleKeyInput(" ")
+                    }) {
+                        Text("space")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, minHeight: 28)
+                            .background(isNextTarget(" ") ? Color.cyan.opacity(0.8) : Color.white.opacity(0.2))
+                            .cornerRadius(5)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(isNextTarget(" ") ? Color.white : Color.clear, lineWidth: 1.2)
+                            )
+                            .shadow(color: isNextTarget(" ") ? .cyan.opacity(0.6) : .clear, radius: 4)
+                    }
+                    
+                    // SEND Action Button on bottom right
                     Button(action: {
                         engine.sendCurrentMessage()
-                        nativeInputBuffer = ""
                     }) {
-                        Text("SEND")
-                            .font(.system(size: 11, weight: .heavy))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .frame(height: 28)
-                            .background(engine.isTextCompleteAndValid ? Color.green : (isSendReady ? Color.blue : Color.gray.opacity(0.35)))
-                            .cornerRadius(6)
+                        HStack(spacing: 3) {
+                            Text("SEND")
+                                .font(.system(size: 11, weight: .heavy))
+                            Image(systemName: engine.isTextCompleteAndValid ? "checkmark.circle.fill" : "arrow.up.circle.fill")
+                                .font(.system(size: 12))
+                        }
+                        .foregroundColor(.white)
+                        .frame(width: 64, height: 28)
+                        .background(
+                            engine.isTextCompleteAndValid ? Color.green :
+                            (isSendReady ? Color.blue : Color.gray.opacity(0.35))
+                        )
+                        .cornerRadius(5)
+                        .scaleEffect(isSendReady ? 1.05 : 1.0)
+                        .animation(.spring(response: 0.2), value: isSendReady)
                     }
                 }
-                .padding(.horizontal, 6)
-                .padding(.bottom, 4)
             }
+            .padding(.horizontal, 4)
+            .padding(.bottom, 4)
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
