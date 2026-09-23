@@ -11,6 +11,18 @@ struct ScorePopup: Identifiable {
     var scale: CGFloat = 1.0
 }
 
+enum TrafficLightPhase: Equatable {
+    case none
+    case approaching
+    case red
+    case yellow
+    case green
+    
+    var isSafeToType: Bool {
+        self == .red || self == .yellow || self == .approaching
+    }
+}
+
 @Observable
 final class GameEngine {
     // Sub-systems
@@ -20,6 +32,12 @@ final class GameEngine {
     // Core Game State
     var status: GameStatus = .playing
     var stats: GameStats = GameStats()
+    
+    // Traffic Light (Lampu Merah) Safe Zone System
+    var trafficLightPhase: TrafficLightPhase = .none
+    var trafficLightY: CGFloat = -0.5       // Position of overhead traffic light gantry (0.38 is stop line)
+    var trafficLightTimer: TimeInterval = 0.0
+    var trafficLightCooldown: TimeInterval = 12.0 // Initial countdown to first red light
     
     // Road & Player Properties
     var playerX: CGFloat = 0.0          // Normalized: -0.85 (far left) to +0.85 (far right)
@@ -95,6 +113,11 @@ final class GameEngine {
         messageTimeRemaining = 0.0
         promptQueueTimer = 0.0
         
+        trafficLightPhase = .none
+        trafficLightY = -0.5
+        trafficLightTimer = 0.0
+        trafficLightCooldown = Double.random(in: 12.0...16.0)
+        
         isHonking = false
         honkWaveRadius = 0.0
         honkCooldown = 0.0
@@ -121,16 +144,74 @@ final class GameEngine {
         playerX += tilt * steerSpeed * CGFloat(dt)
         playerX = max(-0.85, min(0.85, playerX))
         
-        // 2. Road Speed & Distance Progression
-        let currentSpeedKmh = 60.0 + min(70.0, stats.distanceMeters * 0.04)
+        // 2. Traffic Light (Lampu Merah) State Machine & Deceleration / Acceleration
+        var speedFactor: CGFloat = 1.0
+        switch trafficLightPhase {
+        case .none:
+            trafficLightCooldown -= dt
+            if trafficLightCooldown <= 0 {
+                trafficLightPhase = .approaching
+                trafficLightY = -0.45
+            }
+        case .approaching:
+            let stopTargetY: CGFloat = 0.38
+            let distanceToStop = max(0.0, stopTargetY - trafficLightY)
+            // Smoothly decelerate as the overhead light and stop line approach
+            speedFactor = max(0.12, distanceToStop / 0.83)
+            trafficLightY += (roadBaseSpeed / 600.0) * speedFactor * CGFloat(dt)
+            
+            if trafficLightY >= stopTargetY {
+                trafficLightY = stopTargetY
+                trafficLightPhase = .red
+                trafficLightTimer = 7.0 // 7.0 seconds of safe, relaxed typing at red light
+                soundManager.playRedLightStop()
+                addScorePopup(text: "RED LIGHT! 🔴 SAFE TO TYPE", color: .red)
+            }
+        case .red:
+            speedFactor = 0.0
+            trafficLightTimer -= dt
+            if trafficLightTimer <= 0 {
+                trafficLightPhase = .yellow
+                trafficLightTimer = 1.8
+                soundManager.playLightWarningTick()
+                addScorePopup(text: "GET READY! 🟡", color: .yellow)
+            }
+        case .yellow:
+            speedFactor = 0.0
+            trafficLightTimer -= dt
+            if trafficLightTimer <= 0 {
+                trafficLightPhase = .green
+                trafficLightTimer = 2.5
+                soundManager.playGreenLightGo()
+                addScorePopup(text: "GREEN LIGHT! 🟢 GO!", color: .green)
+            }
+        case .green:
+            // Accelerate smoothly back up to speed
+            let progress = min(1.0, (2.5 - trafficLightTimer) / 1.5)
+            speedFactor = max(0.2, CGFloat(progress))
+            trafficLightTimer -= dt
+            trafficLightY += (roadBaseSpeed / 600.0) * speedFactor * CGFloat(dt) * 1.5
+            
+            if trafficLightY > 1.4 || trafficLightTimer <= 0 {
+                trafficLightPhase = .none
+                trafficLightY = -0.5
+                trafficLightCooldown = Double.random(in: 18.0...26.0)
+            }
+        }
+        
+        // 3. Road Speed & Distance Progression
+        let targetSpeedKmh = 60.0 + min(70.0, stats.distanceMeters * 0.04)
+        let currentSpeedKmh = targetSpeedKmh * Double(speedFactor)
         stats.currentSpeedKmh = currentSpeedKmh
-        let currentRoadPixelsPerSec = roadBaseSpeed * CGFloat(currentSpeedKmh / 60.0)
+        let currentRoadPixelsPerSec = roadBaseSpeed * CGFloat(targetSpeedKmh / 60.0) * speedFactor
         
-        roadScrollOffset += currentRoadPixelsPerSec * CGFloat(dt)
-        stats.distanceMeters += (currentSpeedKmh * 1000.0 / 3600.0) * dt
-        stats.addScore(Int(10.0 * dt * stats.currentMultiplier), multiplier: 1.0)
+        if speedFactor > 0 {
+            roadScrollOffset += currentRoadPixelsPerSec * CGFloat(dt)
+            stats.distanceMeters += (currentSpeedKmh * 1000.0 / 3600.0) * dt
+            stats.addScore(Int(10.0 * dt * stats.currentMultiplier), multiplier: 1.0)
+        }
         
-        // 3. Honk Wave Animation & Cooldown
+        // 4. Honk Wave Animation & Cooldown
         if isHonking {
             honkWaveRadius += CGFloat(dt) * 3.0
             if honkWaveRadius >= 1.0 {
@@ -142,9 +223,10 @@ final class GameEngine {
             honkCooldown -= dt
         }
         
-        // 4. Update Oncoming Vehicles
+        // 5. Update Oncoming Vehicles
         for i in (0..<trafficVehicles.count).reversed() {
-            trafficVehicles[i].y += (currentRoadPixelsPerSec + trafficVehicles[i].speed) / 600.0 * CGFloat(dt)
+            let vSpeed = speedFactor > 0 ? (currentRoadPixelsPerSec + trafficVehicles[i].speed) / 600.0 : (trafficVehicles[i].speed / 600.0 * 0.4)
+            trafficVehicles[i].y += vSpeed * CGFloat(dt)
             
             // Check near miss bonus
             if !trafficVehicles[i].passedPlayer && trafficVehicles[i].y > 0.85 {
@@ -162,7 +244,7 @@ final class GameEngine {
             }
         }
         
-        // 5. Update Pedestrians
+        // 6. Update Pedestrians
         for i in (0..<pedestrians.count).reversed() {
             let relativeScroll = currentRoadPixelsPerSec / 600.0
             pedestrians[i].update(deltaTime: dt, roadScrollSpeed: relativeScroll)
@@ -173,26 +255,28 @@ final class GameEngine {
             }
         }
         
-        // 6. Spawn Vehicles & Pedestrians
-        vehicleSpawnTimer -= dt
-        if vehicleSpawnTimer <= 0 {
-            spawnVehicle()
-            vehicleSpawnTimer = Double.random(in: 1.4...2.8) - min(0.8, stats.distanceMeters * 0.001)
+        // 7. Spawn Vehicles & Pedestrians (avoid spawning onto player during red light stop)
+        if trafficLightPhase == .none || trafficLightPhase == .green {
+            vehicleSpawnTimer -= dt
+            if vehicleSpawnTimer <= 0 {
+                spawnVehicle()
+                vehicleSpawnTimer = Double.random(in: 1.4...2.8) - min(0.8, stats.distanceMeters * 0.001)
+            }
+            
+            pedestrianSpawnTimer -= dt
+            if pedestrianSpawnTimer <= 0 {
+                spawnPedestrian()
+                pedestrianSpawnTimer = Double.random(in: 5.0...9.0)
+            }
         }
         
-        pedestrianSpawnTimer -= dt
-        if pedestrianSpawnTimer <= 0 {
-            spawnPedestrian()
-            pedestrianSpawnTimer = Double.random(in: 5.0...9.0)
-        }
-        
-        // 7. Update Texting Prompt
+        // 8. Update Texting Prompt
         updateTexting(deltaTime: dt)
         
-        // 8. Collision Detection
+        // 9. Collision Detection
         checkCollisions()
         
-        // 9. Update Screen Shake, Typing Error Shake & Score Popups
+        // 10. Update Screen Shake, Typing Error Shake & Score Popups
         if screenShake > 0 {
             screenShake = max(0, screenShake - CGFloat(dt) * 6.0)
         }
@@ -252,8 +336,12 @@ final class GameEngine {
                 loadNextPrompt()
             }
         } else {
-            messageTimeRemaining -= deltaTime
-            if messageTimeRemaining <= 0 {
+            // During Red Light (and Yellow), message timer is FROZEN so the player can type with full comfort!
+            if trafficLightPhase != .red && trafficLightPhase != .yellow {
+                messageTimeRemaining -= deltaTime
+            }
+            
+            if messageTimeRemaining <= 0 && trafficLightPhase != .red {
                 // Time Expired Penalty
                 soundManager.playCrash()
                 screenShake = 1.0
@@ -406,6 +494,13 @@ final class GameEngine {
         
         stats.textsCompleted += 1
         
+        // Red light safe stop bonus
+        if trafficLightPhase == .red {
+            let redBonus = 100
+            stats.addScore(redBonus, multiplier: stats.currentMultiplier)
+            addScorePopup(text: "SAFE STOP BONUS! 🚦 +\(redBonus)", color: .green)
+        }
+        
         // Tiered scoring based on typo accuracy
         if messageAccuracy >= 0.95 && typedText.count >= target.count {
             // Tier 1: Perfect / Flawless (100% or near 100%)
@@ -531,8 +626,9 @@ final class GameEngine {
     private func triggerGameOver(reason: String, vehicleHit: String) {
         status = .gameOver
         motionManager.stop()
+        soundManager.playCarCrashHaptic()
         soundManager.playCrash()
-        screenShake = 2.0
+        screenShake = 2.5
         
         let unfinished = activePrompt != nil ? "\(typedText)... (Target: '\(activePrompt?.targetReply ?? "")')" : "None"
         let contact = activePrompt?.contactName ?? "Nobody"

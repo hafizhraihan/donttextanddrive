@@ -35,30 +35,44 @@ struct PhoneDashboardView: View {
                     
                     Spacer()
                     
-                    // Urgency Timer Pill
-                    HStack(spacing: 3) {
-                        Image(systemName: "timer")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
-                        Text(String(format: "%.1fs", max(0, engine.messageTimeRemaining)))
-                            .font(.system(size: 12, weight: .heavy, design: .monospaced))
-                            .foregroundColor(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
+                    // Urgency Timer / Safe Zone Pill
+                    if engine.trafficLightPhase == .red {
+                        HStack(spacing: 4) {
+                            Circle().fill(Color.red).frame(width: 7, height: 7).shadow(color: .red, radius: 3)
+                            Text("PAUSED (RED LIGHT)")
+                                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                .foregroundColor(.green)
+                        }
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.2))
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.green.opacity(0.5), lineWidth: 1))
+                    } else {
+                        HStack(spacing: 3) {
+                            Image(systemName: "timer")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
+                            Text(String(format: "%.1fs", max(0, engine.messageTimeRemaining)))
+                                .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                                .foregroundColor(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
+                        }
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds).opacity(0.2))
+                        .cornerRadius(8)
                     }
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 4)
-                    .background(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds).opacity(0.2))
-                    .cornerRadius(8)
                 }
                 .padding(.horizontal, 10)
                 .padding(.top, 4)
                 
                 // Urgency Progress Bar
                 GeometryReader { barGeo in
-                    let progress = min(1.0, max(0.0, engine.messageTimeRemaining / prompt.urgencySeconds))
+                    let progress = engine.trafficLightPhase == .red ? 1.0 : min(1.0, max(0.0, engine.messageTimeRemaining / prompt.urgencySeconds))
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.white.opacity(0.1)).frame(height: 3)
                         Capsule()
-                            .fill(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
+                            .fill(engine.trafficLightPhase == .red ? Color.green : urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
                             .frame(width: barGeo.size.width * CGFloat(progress), height: 3)
                     }
                 }

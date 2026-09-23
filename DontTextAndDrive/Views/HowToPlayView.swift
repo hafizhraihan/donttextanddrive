@@ -38,7 +38,7 @@ struct HowToPlayView: View {
                     stepNumber: "2",
                     icon: "keyboard.fill",
                     title: "TYPE & TEXT",
-                    description: "Reply to urgent chats from your Boss, Mom, or Crush. Complete the text before the timer hits 0!",
+                    description: "Reply to urgent chats from Boss, Mom, or Crush. Red lights halt traffic giving you safe time to type!",
                     accentColor: .orange
                 )
                 

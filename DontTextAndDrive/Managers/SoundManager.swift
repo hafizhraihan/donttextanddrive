@@ -126,16 +126,69 @@ final class SoundManager {
         ])
     }
     
-    /// Dramatic crash explosion rumble
-    func playCrash() {
+    /// Dramatic multi-stage car crash physical haptic shudder
+    func playCarCrashHaptic() {
         #if canImport(UIKit) && !os(watchOS) && !os(tvOS)
         notificationHaptic.notificationOccurred(.error)
         heavyHaptic.impactOccurred(intensity: 1.0)
+        
+        // Staggered secondary impact waves for realistic physical shudder
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
+            self?.rigidHaptic.impactOccurred(intensity: 1.0)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { [weak self] in
+            self?.heavyHaptic.impactOccurred(intensity: 0.85)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { [weak self] in
+            self?.mediumHaptic.impactOccurred(intensity: 0.7)
+        }
         #endif
+    }
+    
+    /// Dramatic crash explosion rumble
+    func playCrash() {
+        playCarCrashHaptic()
         guard !isMuted else { return }
         
         // Low frequency discord crash
         playTone(frequencies: [110.0, 116.54, 130.81, 65.0], duration: 0.8, volumes: [0.4, 0.35, 0.3, 0.4])
+    }
+    
+    /// Red light safe stop chime
+    func playRedLightStop() {
+        #if canImport(UIKit) && !os(watchOS) && !os(tvOS)
+        mediumHaptic.impactOccurred(intensity: 0.6)
+        #endif
+        guard !isMuted else { return }
+        
+        playSequence(tones: [
+            (440.0, 0.10, 0.25),
+            (554.37, 0.22, 0.30)
+        ])
+    }
+    
+    /// Yellow light warning tick
+    func playLightWarningTick() {
+        #if canImport(UIKit) && !os(watchOS) && !os(tvOS)
+        lightHaptic.impactOccurred(intensity: 0.7)
+        #endif
+        guard !isMuted else { return }
+        
+        playTone(frequencies: [660.0, 880.0], duration: 0.08, volumes: [0.25, 0.25])
+    }
+    
+    /// Green light go chime
+    func playGreenLightGo() {
+        #if canImport(UIKit) && !os(watchOS) && !os(tvOS)
+        rigidHaptic.impactOccurred(intensity: 0.8)
+        #endif
+        guard !isMuted else { return }
+        
+        playSequence(tones: [
+            (523.25, 0.07, 0.2),
+            (659.25, 0.07, 0.25),
+            (783.99, 0.16, 0.35)
+        ])
     }
     
     // MARK: - Tone Synthesizer Helper

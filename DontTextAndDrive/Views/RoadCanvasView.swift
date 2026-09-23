@@ -23,7 +23,18 @@ struct RoadCanvasView: View {
                     VehicleSpriteView(vehicle: vehicle, roadWidth: w, roadHeight: h)
                 }
                 
-                // 4. Honk Shockwave Rings
+                // 4. Traffic Light Overhead Gantry & Road Stop Line
+                if engine.trafficLightPhase != .none {
+                    TrafficLightGantryView(
+                        phase: engine.trafficLightPhase,
+                        yNorm: engine.trafficLightY,
+                        roadWidth: w,
+                        roadHeight: h,
+                        timer: engine.trafficLightTimer
+                    )
+                }
+                
+                // 5. Honk Shockwave Rings
                 if engine.isHonking {
                     HonkWaveView(
                         playerX: engine.playerX,
@@ -34,7 +45,7 @@ struct RoadCanvasView: View {
                     )
                 }
                 
-                // 5. Player's Compact Car
+                // 6. Player's Compact Car
                 PlayerCarView(
                     xNorm: engine.playerX,
                     yNorm: 0.80,
@@ -43,7 +54,7 @@ struct RoadCanvasView: View {
                     roadHeight: h
                 )
                 
-                // 6. Score Popups
+                // 7. Score Popups
                 ForEach(engine.scorePopups) { popup in
                     Text(popup.text)
                         .font(.system(size: 14, weight: .black, design: .rounded))
@@ -63,7 +74,7 @@ struct RoadCanvasView: View {
                         .scaleEffect(1.0 + (1.0 - popup.opacity) * 0.3)
                 }
                 
-                // 7. Top Road HUD Header (Score, Speed, Calibrate, Distance)
+                // 8. Top Road HUD Header (Score, Speed, Calibrate, Distance, Light Banners)
                 VStack(spacing: 8) {
                     HStack(alignment: .center, spacing: 8) {
                         // Help / Menu
@@ -79,18 +90,22 @@ struct RoadCanvasView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "speedometer")
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.cyan)
+                                .foregroundColor(engine.trafficLightPhase == .red ? .red : .cyan)
                             Text("\(Int(engine.stats.currentSpeedKmh))")
                                 .font(.system(size: 15, weight: .black, design: .monospaced))
                                 .foregroundColor(.white)
                             Text("KM/H")
                                 .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.cyan)
+                                .foregroundColor(engine.trafficLightPhase == .red ? .red : .cyan)
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(.ultraThinMaterial)
                         .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(engine.trafficLightPhase == .red ? Color.red.opacity(0.6) : Color.clear, lineWidth: 1)
+                        )
                         
                         Spacer()
                         
@@ -137,6 +152,52 @@ struct RoadCanvasView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.top, 6)
+                    
+                    // Traffic Light Safe Zone Status Banners
+                    if engine.trafficLightPhase == .red {
+                        HStack(spacing: 6) {
+                            Circle().fill(Color.red).frame(width: 9, height: 9).shadow(color: .red, radius: 5)
+                            Text("RED LIGHT — SAFE TO TYPE!")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                            Text(String(format: "%.1fs", max(0, engine.trafficLightTimer)))
+                                .font(.system(size: 11, weight: .black, design: .monospaced))
+                                .foregroundColor(.yellow)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        .background(Color(red: 0.1, green: 0.12, blue: 0.18).opacity(0.95))
+                        .cornerRadius(20)
+                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.red, lineWidth: 1.5))
+                        .shadow(color: .red.opacity(0.5), radius: 8)
+                        .transition(.scale.combined(with: .opacity))
+                    } else if engine.trafficLightPhase == .yellow {
+                        HStack(spacing: 6) {
+                            Circle().fill(Color.yellow).frame(width: 9, height: 9).shadow(color: .yellow, radius: 5)
+                            Text("GET READY TO DRIVE!")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundColor(.black)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        .background(Color.yellow)
+                        .cornerRadius(20)
+                        .shadow(color: .yellow.opacity(0.6), radius: 6)
+                        .transition(.scale.combined(with: .opacity))
+                    } else if engine.trafficLightPhase == .green {
+                        HStack(spacing: 6) {
+                            Circle().fill(Color.green).frame(width: 9, height: 9).shadow(color: .green, radius: 5)
+                            Text("GREEN LIGHT — GO!")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        .background(Color.green.opacity(0.9))
+                        .cornerRadius(20)
+                        .shadow(color: .green.opacity(0.6), radius: 6)
+                        .transition(.scale.combined(with: .opacity))
+                    }
                     
                     // Pedestrian Warning Banner
                     if engine.pedestrians.contains(where: { $0.y > 0.15 && $0.y < 0.75 && !$0.isAlerted }) {
@@ -608,5 +669,206 @@ struct HonkWaveView: View {
             .frame(width: radius * 2, height: radius * 1.6)
             .opacity(Double(1.0 - radiusProgress))
             .position(x: posX, y: posY)
+    }
+}
+
+// MARK: - Traffic Light Overhead Gantry & Stop Line View
+
+struct TrafficLightGantryView: View {
+    let phase: TrafficLightPhase
+    let yNorm: CGFloat
+    let roadWidth: CGFloat
+    let roadHeight: CGFloat
+    let timer: TimeInterval
+    
+    var body: some View {
+        let posY = roadHeight * yNorm
+        let roadLeft = roadWidth * 0.08
+        let roadRight = roadWidth * 0.92
+        let roadSpan = roadRight - roadLeft
+        
+        ZStack {
+            // 1. Asphalt White STOP Line and "STOP" Stencil (on road surface)
+            VStack(spacing: 4) {
+                // STOP stencil painted on asphalt
+                Text("STOP")
+                    .font(.system(size: 15, weight: .black, design: .rounded))
+                    .tracking(6)
+                    .foregroundColor(Color.white.opacity(0.65))
+                
+                // Solid stop bar across all lanes
+                Rectangle()
+                    .fill(Color.white.opacity(0.85))
+                    .frame(width: roadSpan, height: 7)
+                    .shadow(color: .white.opacity(0.35), radius: 3)
+            }
+            .position(x: roadWidth / 2.0, y: posY + 46)
+            
+            // 2. Overhead Metal Truss & Gantry Structure
+            ZStack {
+                // Drop shadow for the gantry truss
+                Rectangle()
+                    .fill(Color.black.opacity(0.55))
+                    .frame(width: roadSpan + 14, height: 16)
+                    .offset(y: 8)
+                
+                // Steel Truss Bar
+                ZStack {
+                    LinearGradient(
+                        colors: [Color(red: 0.35, green: 0.38, blue: 0.42), Color(red: 0.18, green: 0.20, blue: 0.24)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(width: roadSpan + 14, height: 14)
+                    .cornerRadius(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
+                    
+                    // Diagonal Hazard Stripes on sides
+                    HStack {
+                        HazardStripesView().frame(width: 22, height: 10)
+                        Spacer()
+                        HazardStripesView().frame(width: 22, height: 10)
+                    }
+                    .frame(width: roadSpan + 10)
+                }
+                
+                // 3. Traffic Light Signal Head Units (Dual Head: Left & Right Lanes)
+                HStack(spacing: roadSpan * 0.42) {
+                    SingleTrafficSignalHead(phase: phase, timer: timer)
+                    SingleTrafficSignalHead(phase: phase, timer: timer)
+                }
+            }
+            .position(x: roadWidth / 2.0, y: posY)
+        }
+    }
+}
+
+struct SingleTrafficSignalHead: View {
+    let phase: TrafficLightPhase
+    let timer: TimeInterval
+    
+    var isRed: Bool { phase == .red || phase == .approaching }
+    var isYellow: Bool { phase == .yellow }
+    var isGreen: Bool { phase == .green }
+    
+    var body: some View {
+        VStack(spacing: 3) {
+            // Signal Housing
+            VStack(spacing: 4) {
+                // RED Light Lens
+                TrafficLensView(
+                    activeColor: .red,
+                    isActive: isRed,
+                    haloColor: Color(red: 1.0, green: 0.2, blue: 0.2)
+                )
+                
+                // YELLOW Light Lens
+                TrafficLensView(
+                    activeColor: .yellow,
+                    isActive: isYellow,
+                    haloColor: Color(red: 1.0, green: 0.85, blue: 0.1)
+                )
+                
+                // GREEN Light Lens
+                TrafficLensView(
+                    activeColor: Color(red: 0.15, green: 0.95, blue: 0.4),
+                    isActive: isGreen,
+                    haloColor: Color(red: 0.2, green: 1.0, blue: 0.5)
+                )
+            }
+            .padding(5)
+            .background(
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 0.15, green: 0.16, blue: 0.18), Color(red: 0.08, green: 0.09, blue: 0.10)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7)
+                            .stroke(Color.yellow.opacity(0.85), lineWidth: 1.2)
+                    )
+                    .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
+            )
+            
+            // Timer countdown tag under signal if in Red light
+            if phase == .red {
+                Text(String(format: "%.1fs", max(0, timer)))
+                    .font(.system(size: 8, weight: .black, design: .monospaced))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(Color.red.opacity(0.9))
+                    .cornerRadius(4)
+            }
+        }
+    }
+}
+
+struct TrafficLensView: View {
+    let activeColor: Color
+    let isActive: Bool
+    let haloColor: Color
+    
+    var body: some View {
+        ZStack {
+            // Lens Socket
+            Circle()
+                .fill(Color.black.opacity(0.9))
+                .frame(width: 18, height: 18)
+            
+            if isActive {
+                // Glowing bloom
+                Circle()
+                    .fill(haloColor.opacity(0.5))
+                    .frame(width: 28, height: 28)
+                    .blur(radius: 3)
+                
+                // Vibrant Lit Lamp
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [.white, activeColor, activeColor.opacity(0.85)],
+                            center: .center,
+                            startRadius: 2,
+                            endRadius: 9
+                        )
+                    )
+                    .frame(width: 16, height: 16)
+                    .overlay(Circle().stroke(Color.white.opacity(0.7), lineWidth: 1))
+                    .shadow(color: haloColor, radius: 6)
+            } else {
+                // Dimmed / Inactive Lens
+                Circle()
+                    .fill(activeColor.opacity(0.18))
+                    .frame(width: 16, height: 16)
+                    .overlay(Circle().stroke(Color.white.opacity(0.1), lineWidth: 0.5))
+            }
+        }
+    }
+}
+
+struct HazardStripesView: View {
+    var body: some View {
+        Canvas { context, size in
+            let stripeWidth: CGFloat = 3.5
+            var x: CGFloat = -size.height
+            while x < size.width + size.height {
+                var path = Path()
+                path.move(to: CGPoint(x: x, y: size.height))
+                path.addLine(to: CGPoint(x: x + size.height, y: 0))
+                path.addLine(to: CGPoint(x: x + size.height + stripeWidth, y: 0))
+                path.addLine(to: CGPoint(x: x + stripeWidth, y: size.height))
+                path.closeSubpath()
+                context.fill(path, with: .color(.yellow.opacity(0.85)))
+                x += stripeWidth * 2.5
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 2))
     }
 }
