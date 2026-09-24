@@ -9,88 +9,84 @@ struct GameOverModalView: View {
             Color.black.opacity(0.85)
                 .ignoresSafeArea()
             
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // Warning Header
-                VStack(spacing: 6) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.red.opacity(0.25))
-                            .frame(width: 70, height: 70)
-                        Image(systemName: "car.side.front.open.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(.red)
-                    }
-                    
-                    Text("TOTAL WRECK!")
-                        .font(.system(size: 26, weight: .black, design: .rounded))
+                VStack(spacing: 4) {
+                
+                    Text("CRASHED!")
+                        .font(.system(size: 27, weight: .black, design: .rounded))
                         .foregroundColor(.red)
-                    
-                    Text("Don't Text and Drive...")
+
+                    Text("Don't Text and Drive")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.gray)
                 }
                 
-                // Crash Report Card
-                VStack(alignment: .leading, spacing: 10) {
+                // Big Overall Score in the Middle
+                VStack(spacing: 2) {
                     HStack(spacing: 6) {
-                        Image(systemName: "newspaper.fill")
+                        Text("FINAL SCORE")
+                            .font(.system(size: 12, weight: .black, design: .rounded))
                             .foregroundColor(.yellow)
-                        Text("CRASH POLICE REPORT")
-                            .font(.system(size: 11, weight: .heavy))
-                            .foregroundColor(.yellow)
+                            .tracking(1.2)
                     }
                     
-                    Divider().background(Color.white.opacity(0.15))
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        ReportRow(title: "Cause", value: engine.stats.crashInfo.reason, icon: "exclamationmark.triangle.fill", color: .orange)
-                        
-                        if !engine.stats.crashInfo.unfinishedText.isEmpty {
-                            ReportRow(
-                                title: "Drafting",
-                                value: "\"\(engine.stats.crashInfo.unfinishedText)\"",
-                                icon: "message.badge.filled.fill",
-                                color: .cyan
+                    Text("\(engine.stats.score)")
+                        .font(.system(size: 46, weight: .black, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.white, Color(red: 1.0, green: 0.88, blue: 0.35)],
+                                startPoint: .top,
+                                endPoint: .bottom
                             )
-                        }
-                        
-                        ReportRow(
-                            title: "Impact Speed",
-                            value: "\(Int(engine.stats.crashInfo.speedAtImpact)) km/h",
-                            icon: "speedometer",
-                            color: .red
                         )
+                        .shadow(color: Color.yellow.opacity(0.45), radius: 10, y: 2)
+                    
+                    if engine.stats.score >= engine.stats.highScore && engine.stats.score > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "trophy.fill")
+                                .font(.system(size: 10))
+                            Text("NEW HIGH SCORE!")
+                                .font(.system(size: 10, weight: .black, design: .rounded))
+                        }
+                        .foregroundColor(.yellow)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 3)
+                        .background(Color.yellow.opacity(0.25))
+                        .cornerRadius(10)
+                        .overlay(Capsule().stroke(Color.yellow.opacity(0.8), lineWidth: 1))
                     }
                 }
-                .padding(14)
-                .background(Color.white.opacity(0.06))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(
+                    LinearGradient(
+                        colors: [Color.yellow.opacity(0.12), Color.purple.opacity(0.14)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .cornerRadius(14)
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.15), lineWidth: 1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.yellow.opacity(0.6), Color.purple.opacity(0.4)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
                 
-                // Stats Grid
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                // Other Detailed Stats Grid
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                     StatBox(title: "DISTANCE", value: "\(Int(engine.stats.distanceMeters)) m", icon: "road.lanes", color: .yellow)
-                    StatBox(title: "TEXTS SENT", value: "\(engine.stats.textsCompleted)", icon: "checkmark.message.fill", color: .cyan)
-                    StatBox(title: "TYPING ACCURACY", value: String(format: "%.0f%%", engine.stats.accuracyPercentage), icon: "character.cursor.ibeam", color: engine.stats.accuracyPercentage > 90 ? .green : .orange)
-                    StatBox(title: "TYPOS MADE", value: "\(engine.stats.typosCount)", icon: "exclamationmark.bubble.fill", color: engine.stats.typosCount == 0 ? .green : .red)
-                    StatBox(title: "PEDESTRIANS SAVED", value: "\(engine.stats.pedestriansSaved)", icon: "figure.walk.circle.fill", color: .green)
-                    StatBox(title: "FINAL SCORE", value: "\(engine.stats.score)", icon: "star.fill", color: .purple)
-                }
-                
-                // High Score Badge
-                if engine.stats.score >= engine.stats.highScore && engine.stats.score > 0 {
-                    HStack(spacing: 6) {
-                        Image(systemName: "trophy.fill")
-                            .foregroundColor(.yellow)
-                        Text("NEW HIGH SCORE!")
-                            .font(.system(size: 13, weight: .heavy, design: .rounded))
-                            .foregroundColor(.yellow)
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .background(Color.yellow.opacity(0.2))
-                    .cornerRadius(20)
-                    .overlay(Capsule().stroke(Color.yellow, lineWidth: 1.5))
+                    StatBox(title: "TEXTS SENT", value: "\(engine.stats.textsCompleted)", icon: "checkmark.message.fill", color: .yellow)
+                    StatBox(title: "ACCURACY", value: String(format: "%.0f%%", engine.stats.accuracyPercentage), icon: "character.cursor.ibeam", color: .yellow)
+                    StatBox(title: "TYPOS MADE", value: "\(engine.stats.typosCount)", icon: "exclamationmark.bubble.fill", color: .yellow)
+                    StatBox(title: "PEDESTRIANS SAVED", value: "\(engine.stats.pedestriansSaved)", icon: "figure.walk.circle.fill", color: .yellow)
+                    StatBox(title: "BEST RECORD", value: "\(engine.stats.highScore)", icon: "trophy.fill", color: .yellow)
                 }
                 
                 // Action Buttons
@@ -106,7 +102,7 @@ struct GameOverModalView: View {
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .frame(height: 48)
                         .background(
                             LinearGradient(colors: [.cyan, .blue], startPoint: .leading, endPoint: .trailing)
                         )
@@ -120,18 +116,18 @@ struct GameOverModalView: View {
                         Text("MAIN MENU")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.gray)
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 4)
                     }
                 }
-                .padding(.top, 4)
+                .padding(.top, 2)
             }
-            .padding(22)
+            .padding(18)
             .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color(red: 0.12, green: 0.13, blue: 0.16))
-                    .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.red.opacity(0.4), lineWidth: 1.5))
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(Color(red: 0.11, green: 0.12, blue: 0.15))
+                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.red.opacity(0.4), lineWidth: 1.5))
             )
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
         }
     }
 }
@@ -188,4 +184,8 @@ struct StatBox: View {
         .background(Color.white.opacity(0.05))
         .cornerRadius(10)
     }
+}
+
+#Preview {
+    GameOverModalView(engine: GameEngine())
 }
