@@ -30,7 +30,7 @@ final class GameEngine {
     var soundManager = SoundManager.shared
     
     // Core Game State
-    var status: GameStatus = .playing
+    var status: GameStatus = .menu
     var stats: GameStats = GameStats()
     
     // Traffic Light (Lampu Merah) Safe Zone System

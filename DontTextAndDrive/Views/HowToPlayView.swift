@@ -4,23 +4,24 @@ struct HowToPlayView: View {
     var onStart: () -> Void
     
     var body: some View {
-        VStack(spacing: 20) {
-            // Header
-            VStack(spacing: 8) {
-                HStack(spacing: 6) {
-                    Image(systemName: "car.fill")
-                        .foregroundColor(.cyan)
-                    Image(systemName: "ellipsis.message.fill")
-                        .foregroundColor(.yellow)
-                }
-                .font(.system(size: 28))
-                
+        VStack(spacing: 16) {
+            // Home Hero / Logo SVG Graphic Asset
+            Image("logo")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 320, maxHeight: 135)
+                .cornerRadius(16)
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.cyan.opacity(0.35), lineWidth: 1))
+                .shadow(color: Color.cyan.opacity(0.3), radius: 8, y: 3)
+            
+            // Header Title
+            VStack(spacing: 4) {
                 Text("DON'T TEXT & DRIVE")
-                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .font(.system(size: 24, weight: .black, design: .rounded))
                     .foregroundColor(.white)
                 
                 Text("A Fast-Paced Multitasking Survival Game")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.cyan)
             }
             
