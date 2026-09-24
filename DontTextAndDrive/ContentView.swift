@@ -10,28 +10,27 @@ struct ContentView: View {
                 Color(red: 0.05, green: 0.06, blue: 0.08)
                     .ignoresSafeArea()
                 
-                VStack(spacing: 4) {
-                    // Top: Road Simulation View (Windshield, Oncoming Traffic, Floating HONK & HUD)
-                    RoadCanvasView(engine: engine)
-                        .frame(maxWidth: .infinity)
-                        .frame(maxHeight: .infinity)
-                    
-                    // Bottom: Compact Smartphone Texting Interface
-                    PhoneDashboardView(engine: engine)
-                        .padding(.bottom, 2)
-                }
-                .padding(.top, 2)
-                .padding(.horizontal, 4)
-                
-                // Menu / Tutorial Modal Overlay
                 if engine.status == .menu {
+                    // Main Menu: Road with car in background, Logo SVG at top, Start button at bottom
                     ZStack {
-                        Color.black.opacity(0.85)
+                        RoadCanvasView(engine: engine)
                             .ignoresSafeArea()
-                        HowToPlayView {
-                            engine.startGame()
-                        }
+                        
+                        MainMenuOverlayView(engine: engine)
                     }
+                    .transition(.opacity)
+                } else {
+                    // Active Gameplay: Road Simulation + Bottom Phone Texting Dashboard
+                    VStack(spacing: 4) {
+                        RoadCanvasView(engine: engine)
+                            .frame(maxWidth: .infinity)
+                            .frame(maxHeight: .infinity)
+                        
+                        PhoneDashboardView(engine: engine)
+                            .padding(.bottom, 2)
+                    }
+                    .padding(.top, 2)
+                    .padding(.horizontal, 4)
                     .transition(.opacity)
                 }
                 

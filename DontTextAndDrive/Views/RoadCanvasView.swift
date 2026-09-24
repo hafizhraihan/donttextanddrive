@@ -48,253 +48,259 @@ struct RoadCanvasView: View {
                 // 6. Player's Compact Car
                 PlayerCarView(
                     xNorm: engine.playerX,
-                    yNorm: 0.80,
+                    yNorm: engine.status == .menu ? 0.62 : 0.80,
                     steerAngle: engine.playerSteerAngle,
                     roadWidth: w,
                     roadHeight: h
                 )
                 
-                // 7. Score Popups
-                ForEach(engine.scorePopups) { popup in
-                    Text(popup.text)
-                        .font(.system(size: 14, weight: .black, design: .rounded))
-                        .foregroundColor(popup.color)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(
-                            Capsule()
-                                .fill(Color.black.opacity(0.8))
-                                .overlay(Capsule().stroke(popup.color, lineWidth: 1.5))
-                        )
-                        .position(
-                            x: w / 2.0 + popup.x * (w * 0.42),
-                            y: h * popup.y
-                        )
-                        .opacity(popup.opacity)
-                        .scaleEffect(1.0 + (1.0 - popup.opacity) * 0.3)
+                // 7. Score Popups (during gameplay)
+                if engine.status == .playing {
+                    ForEach(engine.scorePopups) { popup in
+                        Text(popup.text)
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .foregroundColor(popup.color)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule()
+                                    .fill(Color.black.opacity(0.8))
+                                    .overlay(Capsule().stroke(popup.color, lineWidth: 1.5))
+                            )
+                            .position(
+                                x: w / 2.0 + popup.x * (w * 0.42),
+                                y: h * popup.y
+                            )
+                            .opacity(popup.opacity)
+                            .scaleEffect(1.0 + (1.0 - popup.opacity) * 0.3)
+                    }
                 }
                 
-                // 8. Top Road HUD Header (Score, Speed, Calibrate, Distance, Light Banners)
-                VStack(spacing: 8) {
-                    HStack(alignment: .center, spacing: 8) {
-                        // Help / Menu
-                        Button(action: {
-                            engine.status = .menu
-                        }) {
-                            Image(systemName: "questionmark.circle.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.cyan)
-                        }
-                        
-                        // Speedometer Pill
-                        HStack(spacing: 4) {
-                            Image(systemName: "speedometer")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(engine.trafficLightPhase == .red ? .red : .cyan)
-                            Text("\(Int(engine.stats.currentSpeedKmh))")
-                                .font(.system(size: 15, weight: .black, design: .monospaced))
-                                .foregroundColor(.white)
-                            Text("KM/H")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(engine.trafficLightPhase == .red ? .red : .cyan)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(engine.trafficLightPhase == .red ? Color.red.opacity(0.6) : Color.clear, lineWidth: 1)
-                        )
-                        
-                        Spacer()
-                        
-                        // Calibrate Gyro Pill
-                        Button(action: {
-                            engine.motionManager.calibrate()
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "gyroscope")
-                                    .font(.system(size: 11))
-                                Text("CALIBRATE")
-                                    .font(.system(size: 9, weight: .black))
+                // 8. Top Road HUD Header (Score, Speed, Calibrate, Distance, Light Banners - only during gameplay)
+                if engine.status == .playing || engine.status == .paused {
+                    VStack(spacing: 8) {
+                        HStack(alignment: .center, spacing: 8) {
+                            // Help / Menu
+                            Button(action: {
+                                engine.status = .menu
+                            }) {
+                                Image(systemName: "questionmark.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.cyan)
                             }
-                            .foregroundColor(.white)
+                            
+                            // Speedometer Pill
+                            HStack(spacing: 4) {
+                                Image(systemName: "speedometer")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(engine.trafficLightPhase == .red ? .red : .cyan)
+                                Text("\(Int(engine.stats.currentSpeedKmh))")
+                                    .font(.system(size: 15, weight: .black, design: .monospaced))
+                                    .foregroundColor(.white)
+                                Text("KM/H")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundColor(engine.trafficLightPhase == .red ? .red : .cyan)
+                            }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.cyan.opacity(0.3))
+                            .background(.ultraThinMaterial)
                             .cornerRadius(10)
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cyan.opacity(0.5), lineWidth: 1))
-                        }
-                        
-                        // Distance Tracker
-                        HStack(spacing: 4) {
-                            Image(systemName: "road.lanes")
-                                .font(.system(size: 11))
-                                .foregroundColor(.yellow)
-                            Text(String(format: "%.0f m", engine.stats.distanceMeters))
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(engine.trafficLightPhase == .red ? Color.red.opacity(0.6) : Color.clear, lineWidth: 1)
+                            )
+                            
+                            Spacer()
+                            
+                            // Calibrate Gyro Pill
+                            Button(action: {
+                                engine.motionManager.calibrate()
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "gyroscope")
+                                        .font(.system(size: 11))
+                                    Text("CALIBRATE")
+                                        .font(.system(size: 9, weight: .black))
+                                }
                                 .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(10)
-                        
-                        // Pause Button
-                        Button(action: {
-                            engine.pauseGame()
-                        }) {
-                            Image(systemName: engine.status == .paused ? "play.circle.fill" : "pause.circle.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.yellow)
-                        }
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.top, 6)
-                    
-                    // Traffic Light Safe Zone Status Banners
-                    if engine.trafficLightPhase == .red {
-                        HStack(spacing: 6) {
-                            Circle().fill(Color.red).frame(width: 9, height: 9).shadow(color: .red, radius: 5)
-                            Text("RED LIGHT — SAFE TO TYPE!")
-                                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                .foregroundColor(.white)
-                            Text(String(format: "%.1fs", max(0, engine.trafficLightTimer)))
-                                .font(.system(size: 11, weight: .black, design: .monospaced))
-                                .foregroundColor(.yellow)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(Color(red: 0.1, green: 0.12, blue: 0.18).opacity(0.95))
-                        .cornerRadius(20)
-                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.red, lineWidth: 1.5))
-                        .shadow(color: .red.opacity(0.5), radius: 8)
-                        .transition(.scale.combined(with: .opacity))
-                    } else if engine.trafficLightPhase == .yellow {
-                        HStack(spacing: 6) {
-                            Circle().fill(Color.yellow).frame(width: 9, height: 9).shadow(color: .yellow, radius: 5)
-                            Text("GET READY TO DRIVE!")
-                                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                .foregroundColor(.black)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(Color.yellow)
-                        .cornerRadius(20)
-                        .shadow(color: .yellow.opacity(0.6), radius: 6)
-                        .transition(.scale.combined(with: .opacity))
-                    } else if engine.trafficLightPhase == .green {
-                        HStack(spacing: 6) {
-                            Circle().fill(Color.green).frame(width: 9, height: 9).shadow(color: .green, radius: 5)
-                            Text("GREEN LIGHT — GO!")
-                                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(Color.green.opacity(0.9))
-                        .cornerRadius(20)
-                        .shadow(color: .green.opacity(0.6), radius: 6)
-                        .transition(.scale.combined(with: .opacity))
-                    }
-                    
-                    // Pedestrian Warning Banner
-                    if engine.pedestrians.contains(where: { $0.y > 0.15 && $0.y < 0.75 && !$0.isAlerted }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.yellow)
-                            Text("PEDESTRIAN CROSSING! TAP HONK!")
-                                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(Color.red.opacity(0.9))
-                        .cornerRadius(20)
-                        .shadow(color: .red.opacity(0.6), radius: 6)
-                        .transition(.scale.combined(with: .opacity))
-                    }
-                    
-                    Spacer()
-                }
-                
-                // 8. Floating Tactile HONK Button (Bottom-Right of Road)
-                VStack {
-                    Spacer()
-                    HStack {
-                        // Multiplier Pill if > 1.0
-                        if engine.stats.currentMultiplier > 1.0 {
-                            HStack(spacing: 4) {
-                                Image(systemName: "flame.fill")
-                                    .foregroundColor(.orange)
-                                Text(String(format: "%.1fx", engine.stats.currentMultiplier))
-                                    .font(.system(size: 14, weight: .heavy, design: .rounded))
-                                    .foregroundColor(.orange)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.cyan.opacity(0.3))
+                                .cornerRadius(10)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cyan.opacity(0.5), lineWidth: 1))
                             }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.black.opacity(0.65))
-                            .cornerRadius(12)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.orange, lineWidth: 1.5))
-                            .padding(.leading, 12)
+                            
+                            // Distance Tracker
+                            HStack(spacing: 4) {
+                                Image(systemName: "road.lanes")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.yellow)
+                                Text(String(format: "%.0f m", engine.stats.distanceMeters))
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.ultraThinMaterial)
+                            .cornerRadius(10)
+                            
+                            // Pause Button
+                            Button(action: {
+                                engine.pauseGame()
+                            }) {
+                                Image(systemName: engine.status == .paused ? "play.circle.fill" : "pause.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.yellow)
+                            }
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.top, 6)
+                        
+                        // Traffic Light Safe Zone Status Banners
+                        if engine.trafficLightPhase == .red {
+                            HStack(spacing: 6) {
+                                Circle().fill(Color.red).frame(width: 9, height: 9).shadow(color: .red, radius: 5)
+                                Text("RED LIGHT — SAFE TO TYPE!")
+                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.white)
+                                Text(String(format: "%.1fs", max(0, engine.trafficLightTimer)))
+                                    .font(.system(size: 11, weight: .black, design: .monospaced))
+                                    .foregroundColor(.yellow)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color(red: 0.1, green: 0.12, blue: 0.18).opacity(0.95))
+                            .cornerRadius(20)
+                            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.red, lineWidth: 1.5))
+                            .shadow(color: .red.opacity(0.5), radius: 8)
+                            .transition(.scale.combined(with: .opacity))
+                        } else if engine.trafficLightPhase == .yellow {
+                            HStack(spacing: 6) {
+                                Circle().fill(Color.yellow).frame(width: 9, height: 9).shadow(color: .yellow, radius: 5)
+                                Text("GET READY TO DRIVE!")
+                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.black)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color.yellow)
+                            .cornerRadius(20)
+                            .shadow(color: .yellow.opacity(0.6), radius: 6)
+                            .transition(.scale.combined(with: .opacity))
+                        } else if engine.trafficLightPhase == .green {
+                            HStack(spacing: 6) {
+                                Circle().fill(Color.green).frame(width: 9, height: 9).shadow(color: .green, radius: 5)
+                                Text("GREEN LIGHT — GO!")
+                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color.green.opacity(0.9))
+                            .cornerRadius(20)
+                            .shadow(color: .green.opacity(0.6), radius: 6)
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                        
+                        // Pedestrian Warning Banner
+                        if engine.pedestrians.contains(where: { $0.y > 0.15 && $0.y < 0.75 && !$0.isAlerted }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.yellow)
+                                Text("PEDESTRIAN CROSSING! TAP HONK!")
+                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color.red.opacity(0.9))
+                            .cornerRadius(20)
+                            .shadow(color: .red.opacity(0.6), radius: 6)
+                            .transition(.scale.combined(with: .opacity))
                         }
                         
                         Spacer()
-                        
-                        // Giant Floating HONK Button
-                        Button(action: {
-                            engine.triggerHonk()
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        RadialGradient(
-                                            colors: [
-                                                engine.isHonking ? Color.yellow.opacity(0.7) : Color.orange.opacity(0.3),
-                                                Color.clear
-                                            ],
-                                            center: .center,
-                                            startRadius: 15,
-                                            endRadius: 45
-                                        )
-                                    )
-                                    .frame(width: 80, height: 80)
-                                
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: engine.isHonking ?
-                                                [Color(red: 1.0, green: 0.85, blue: 0.2), Color(red: 0.95, green: 0.5, blue: 0.0)] :
-                                                [Color(red: 0.95, green: 0.3, blue: 0.1), Color(red: 0.75, green: 0.12, blue: 0.05)],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                    )
-                                    .frame(width: 64, height: 64)
-                                    .overlay(Circle().stroke(Color.white.opacity(0.8), lineWidth: 2))
-                                    .shadow(color: .black.opacity(0.6), radius: 6, y: 3)
-                                
-                                VStack(spacing: 1) {
-                                    Image(systemName: "speaker.wave.3.fill")
-                                        .font(.system(size: 20, weight: .black))
-                                        .foregroundColor(.white)
-                                    Text("HONK")
-                                        .font(.system(size: 10, weight: .black, design: .rounded))
-                                        .foregroundColor(.white)
+                    }
+                }
+                
+                // 9. Floating Tactile HONK Button (Bottom-Right of Road - only during gameplay)
+                if engine.status == .playing {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            // Multiplier Pill if > 1.0
+                            if engine.stats.currentMultiplier > 1.0 {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "flame.fill")
+                                        .foregroundColor(.orange)
+                                    Text(String(format: "%.1fx", engine.stats.currentMultiplier))
+                                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                                        .foregroundColor(.orange)
                                 }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.black.opacity(0.65))
+                                .cornerRadius(12)
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.orange, lineWidth: 1.5))
+                                .padding(.leading, 12)
                             }
-                            .scaleEffect(isHornPressed || engine.isHonking ? 0.90 : 1.0)
-                            .animation(.spring(response: 0.18, dampingFraction: 0.6), value: isHornPressed || engine.isHonking)
+                            
+                            Spacer()
+                            
+                            // Giant Floating HONK Button
+                            Button(action: {
+                                engine.triggerHonk()
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(
+                                            RadialGradient(
+                                                colors: [
+                                                    engine.isHonking ? Color.yellow.opacity(0.7) : Color.orange.opacity(0.3),
+                                                    Color.clear
+                                                ],
+                                                center: .center,
+                                                startRadius: 15,
+                                                endRadius: 45
+                                            )
+                                        )
+                                        .frame(width: 80, height: 80)
+                                    
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: engine.isHonking ?
+                                                    [Color(red: 1.0, green: 0.85, blue: 0.2), Color(red: 0.95, green: 0.5, blue: 0.0)] :
+                                                    [Color(red: 0.95, green: 0.3, blue: 0.1), Color(red: 0.75, green: 0.12, blue: 0.05)],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+                                        .frame(width: 64, height: 64)
+                                        .overlay(Circle().stroke(Color.white.opacity(0.8), lineWidth: 2))
+                                        .shadow(color: .black.opacity(0.6), radius: 6, y: 3)
+                                    
+                                    VStack(spacing: 1) {
+                                        Image(systemName: "speaker.wave.3.fill")
+                                            .font(.system(size: 20, weight: .black))
+                                            .foregroundColor(.white)
+                                        Text("HONK")
+                                            .font(.system(size: 10, weight: .black, design: .rounded))
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                                .scaleEffect(isHornPressed || engine.isHonking ? 0.90 : 1.0)
+                                .animation(.spring(response: 0.18, dampingFraction: 0.6), value: isHornPressed || engine.isHonking)
+                            }
+                            .buttonStyle(.plain)
+                            .simultaneousGesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { _ in isHornPressed = true }
+                                    .onEnded { _ in isHornPressed = false }
+                            )
+                            .padding(.trailing, 12)
+                            .padding(.bottom, 8)
                         }
-                        .buttonStyle(.plain)
-                        .simultaneousGesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { _ in isHornPressed = true }
-                                .onEnded { _ in isHornPressed = false }
-                        )
-                        .padding(.trailing, 12)
-                        .padding(.bottom, 8)
                     }
                 }
             }

@@ -134,6 +134,13 @@ final class GameEngine {
         let dt = min(0.05, currentTime.timeIntervalSince(lastUpdateTime))
         lastUpdateTime = currentTime
         
+        if status == .menu {
+            roadScrollOffset += 150.0 * CGFloat(dt)
+            playerX = 0.0
+            playerSteerAngle = 0.0
+            return
+        }
+        
         guard status == .playing else { return }
         
         // 1. Update Player Steering from Gyro / Touch
