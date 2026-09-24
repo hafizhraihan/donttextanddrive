@@ -31,7 +31,7 @@ struct GameStats {
     var pedestriansSaved: Int = 0
     var closeCalls: Int = 0
     var currentMultiplier: Double = 1.0
-    var currentSpeedKmh: Double = 60.0
+    var currentSpeedKmh: Double = 30.0
     var totalKeystrokes: Int = 0
     var typosCount: Int = 0
     var crashInfo: CrashInfo = .default
@@ -58,7 +58,7 @@ struct GameStats {
         pedestriansSaved = 0
         closeCalls = 0
         currentMultiplier = 1.0
-        currentSpeedKmh = 60.0
+        currentSpeedKmh = 30.0
         totalKeystrokes = 0
         typosCount = 0
         crashInfo = .default

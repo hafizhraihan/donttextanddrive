@@ -102,7 +102,7 @@ final class GameEngine {
         playerX = 0.0
         playerSteerAngle = 0.0
         playerTargetX = 0.0
-        roadScrollOffset = 0.0
+        // Preserve roadScrollOffset so road lines flow continuously without jumping
         trafficVehicles.removeAll()
         pedestrians.removeAll()
         scorePopups.removeAll()
@@ -135,7 +135,8 @@ final class GameEngine {
         lastUpdateTime = currentTime
         
         if status == .menu {
-            roadScrollOffset += 150.0 * CGFloat(dt)
+            stats.currentSpeedKmh = 30.0
+            roadScrollOffset += 160.0 * CGFloat(dt)
             playerX = 0.0
             playerSteerAngle = 0.0
             return
@@ -165,7 +166,7 @@ final class GameEngine {
             let distanceToStop = max(0.0, stopTargetY - trafficLightY)
             // Smoothly decelerate as the overhead light and stop line approach
             speedFactor = max(0.12, distanceToStop / 0.83)
-            trafficLightY += (roadBaseSpeed / 600.0) * speedFactor * CGFloat(dt)
+            trafficLightY += 0.32 * speedFactor * CGFloat(dt)
             
             if trafficLightY >= stopTargetY {
                 trafficLightY = stopTargetY
@@ -197,7 +198,7 @@ final class GameEngine {
             let progress = min(1.0, (2.5 - trafficLightTimer) / 1.5)
             speedFactor = max(0.2, CGFloat(progress))
             trafficLightTimer -= dt
-            trafficLightY += (roadBaseSpeed / 600.0) * speedFactor * CGFloat(dt) * 1.5
+            trafficLightY += 0.32 * speedFactor * CGFloat(dt) * 1.5
             
             if trafficLightY > 1.4 || trafficLightTimer <= 0 {
                 trafficLightPhase = .none
@@ -206,11 +207,11 @@ final class GameEngine {
             }
         }
         
-        // 3. Road Speed & Distance Progression
-        let targetSpeedKmh = 60.0 + min(70.0, stats.distanceMeters * 0.04)
+        // 3. Road Speed & Distance Progression (Starts at 30 KM/H, matching Menu speed)
+        let targetSpeedKmh = 30.0 + min(90.0, stats.distanceMeters * 0.04)
         let currentSpeedKmh = targetSpeedKmh * Double(speedFactor)
         stats.currentSpeedKmh = currentSpeedKmh
-        let currentRoadPixelsPerSec = roadBaseSpeed * CGFloat(targetSpeedKmh / 60.0) * speedFactor
+        let currentRoadPixelsPerSec = 160.0 * CGFloat(targetSpeedKmh / 30.0) * speedFactor
         
         if speedFactor > 0 {
             roadScrollOffset += currentRoadPixelsPerSec * CGFloat(dt)

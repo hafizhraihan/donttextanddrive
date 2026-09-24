@@ -45,10 +45,10 @@ struct RoadCanvasView: View {
                     )
                 }
                 
-                // 6. Player's Compact Car
+                // 6. Player's Compact Car (Exact same position, size, and design in menu and gameplay)
                 PlayerCarView(
                     xNorm: engine.playerX,
-                    yNorm: engine.status == .menu ? 0.62 : 0.80,
+                    yNorm: 0.80,
                     steerAngle: engine.playerSteerAngle,
                     roadWidth: w,
                     roadHeight: h
@@ -76,18 +76,19 @@ struct RoadCanvasView: View {
                     }
                 }
                 
-                // 8. Top Road HUD Header (Score, Speed, Calibrate, Distance, Light Banners - only during gameplay)
-                if engine.status == .playing || engine.status == .paused {
-                    VStack(spacing: 8) {
-                        HStack(alignment: .center, spacing: 8) {
-                            // Help / Menu
-                            Button(action: {
+                // 8. Top Road HUD Header (Score, Speed, Calibrate, Distance, Light Banners)
+                VStack(spacing: 8) {
+                    HStack(alignment: .center, spacing: 8) {
+                        // Help / Menu
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.35)) {
                                 engine.status = .menu
-                            }) {
-                                Image(systemName: "questionmark.circle.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.cyan)
                             }
+                        }) {
+                            Image(systemName: "questionmark.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.cyan)
+                        }
                             
                             // Speedometer Pill
                             HStack(spacing: 4) {
@@ -221,7 +222,6 @@ struct RoadCanvasView: View {
                         
                         Spacer()
                     }
-                }
                 
                 // 9. Floating Tactile HONK Button (Bottom-Right of Road - only during gameplay)
                 if engine.status == .playing {

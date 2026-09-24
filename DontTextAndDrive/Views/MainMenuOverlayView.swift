@@ -11,7 +11,7 @@ struct MainMenuOverlayView: View {
             Image("logo")
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: 320, maxHeight: 180)
+                .frame(maxWidth: 300, maxHeight: 140)
                 .shadow(color: Color.cyan.opacity(0.45), radius: 18, y: 6)
                 .offset(y: floatingOffset)
                 .onAppear {
@@ -19,13 +19,13 @@ struct MainMenuOverlayView: View {
                         floatingOffset = -8
                     }
                 }
-                .padding(.top, 56)
+                .padding(.top, 48)
             
             Spacer()
             
             // 2. Bottom Section: START DRIVING Button
             Button(action: {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                withAnimation(.easeInOut(duration: 0.35)) {
                     engine.startGame()
                 }
             }) {
@@ -37,7 +37,7 @@ struct MainMenuOverlayView: View {
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 62)
+                .frame(height: 58)
                 .background(
                     LinearGradient(
                         colors: [Color(red: 0.1, green: 0.85, blue: 0.4), Color(red: 0.05, green: 0.6, blue: 0.25)],
@@ -45,8 +45,8 @@ struct MainMenuOverlayView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .cornerRadius(20)
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.6), lineWidth: 1.5))
+                .cornerRadius(18)
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.6), lineWidth: 1.5))
                 .shadow(color: Color.green.opacity(0.6), radius: 16, y: 6)
                 .scaleEffect(isStartPressed ? 0.94 : 1.0)
             }
@@ -57,7 +57,8 @@ struct MainMenuOverlayView: View {
                     .onEnded { _ in isStartPressed = false }
             )
             .padding(.horizontal, 24)
-            .padding(.bottom, 48)
+            .padding(.bottom, 24)
         }
     }
 }
+

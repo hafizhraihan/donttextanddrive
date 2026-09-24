@@ -10,34 +10,30 @@ struct ContentView: View {
                 Color(red: 0.05, green: 0.06, blue: 0.08)
                     .ignoresSafeArea()
                 
+                // Unified Game View Layout (Always Identical in both Menu & Playing)
+                VStack(spacing: 4) {
+                    RoadCanvasView(engine: engine)
+                        .frame(maxWidth: .infinity)
+                        .frame(maxHeight: .infinity)
+                    
+                    PhoneDashboardView(engine: engine)
+                        .padding(.bottom, 2)
+                }
+                .padding(.top, 2)
+                .padding(.horizontal, 4)
+                
+                // Main Menu Overlay (Floating Logo at Top & Start Button at Bottom)
                 if engine.status == .menu {
-                    // Main Menu: Road with car in background, Logo SVG at top, Start button at bottom
-                    ZStack {
-                        RoadCanvasView(engine: engine)
-                            .ignoresSafeArea()
-                        
-                        MainMenuOverlayView(engine: engine)
-                    }
-                    .transition(.opacity)
-                } else {
-                    // Active Gameplay: Road Simulation + Bottom Phone Texting Dashboard
-                    VStack(spacing: 4) {
-                        RoadCanvasView(engine: engine)
-                            .frame(maxWidth: .infinity)
-                            .frame(maxHeight: .infinity)
-                        
-                        PhoneDashboardView(engine: engine)
-                            .padding(.bottom, 2)
-                    }
-                    .padding(.top, 2)
-                    .padding(.horizontal, 4)
-                    .transition(.opacity)
+                    MainMenuOverlayView(engine: engine)
+                        .transition(.opacity)
+                        .zIndex(10)
                 }
                 
                 // Game Over Modal Overlay
                 if engine.status == .gameOver {
                     GameOverModalView(engine: engine)
                         .transition(.scale.combined(with: .opacity))
+                        .zIndex(20)
                 }
             }
             .onChange(of: timeline.date) { oldDate, newDate in
