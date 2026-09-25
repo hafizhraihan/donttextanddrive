@@ -35,6 +35,21 @@ enum VehicleType: CaseIterable {
         case .taxi: return "Yellow Taxi"
         }
     }
+    
+    var collisionSize: (width: CGFloat, height: CGFloat) {
+        switch self {
+        case .player:
+            return (width: 0.27, height: 0.13)
+        case .sedan, .taxi:
+            return (width: 0.27, height: 0.135)
+        case .sportsCar:
+            return (width: 0.26, height: 0.13)
+        case .deliveryVan:
+            return (width: 0.29, height: 0.155)
+        case .truck:
+            return (width: 0.32, height: 0.20)
+        }
+    }
 }
 
 struct Vehicle: Identifiable {

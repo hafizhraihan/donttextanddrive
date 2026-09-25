@@ -263,10 +263,14 @@ final class GameEngine {
             let vSpeed = speedFactor > 0 ? (currentRoadPixelsPerSec + trafficVehicles[i].speed) / 600.0 : (trafficVehicles[i].speed / 600.0 * 0.4)
             trafficVehicles[i].y += vSpeed * CGFloat(dt)
             
-            // Check near miss bonus
+            // Check near miss bonus (only if passed closely without colliding)
             if !trafficVehicles[i].passedPlayer && trafficVehicles[i].y > 0.85 {
                 trafficVehicles[i].passedPlayer = true
-                if abs(trafficVehicles[i].x - playerX) < 0.35 {
+                let vSize = trafficVehicles[i].type.collisionSize
+                let pSize = VehicleType.player.collisionSize
+                let combinedHalfWidth = (pSize.width + vSize.width) / 2.0
+                let deltaX = abs(trafficVehicles[i].x - playerX)
+                if deltaX >= combinedHalfWidth && deltaX < combinedHalfWidth + 0.14 {
                     stats.closeCalls += 1
                     addScorePopup(text: "CLOSE CALL! +5", color: .yellow)
                     stats.addScore(5, multiplier: stats.currentMultiplier)
@@ -610,8 +614,9 @@ final class GameEngine {
     // MARK: - Collision Detection
     
     private func checkCollisions() {
-        let playerWidth: CGFloat = 0.16
-        let playerHeight: CGFloat = 0.14
+        let playerSize = VehicleType.player.collisionSize
+        let playerWidth = playerSize.width
+        let playerHeight = playerSize.height
         let playerY: CGFloat = 0.80
         
         let playerMinX = playerX - playerWidth / 2.0
@@ -621,14 +626,17 @@ final class GameEngine {
         
         // 1. Check Traffic Collisions
         for vehicle in trafficVehicles {
-            let vWidth: CGFloat = 0.16
-            let vHeight: CGFloat = 0.14
+            let vSize = vehicle.type.collisionSize
+            let vWidth = vSize.width
+            let vHeight = vSize.height
             let vMinX = vehicle.x - vWidth / 2.0
             let vMaxX = vehicle.x + vWidth / 2.0
             let vMinY = vehicle.y - vHeight / 2.0
             let vMaxY = vehicle.y + vHeight / 2.0
             
-            if !(playerMaxX < vMinX || playerMinX > vMaxX || playerMaxY < vMinY || playerMinY > vMaxY) {
+            let isColliding = !(playerMaxX < vMinX || playerMinX > vMaxX || playerMaxY < vMinY || playerMinY > vMaxY)
+            
+            if isColliding {
                 triggerGameOver(
                     reason: "Rear-ended into a \(vehicle.type.displayName)!",
                     vehicleHit: vehicle.type.displayName
@@ -639,15 +647,16 @@ final class GameEngine {
         
         // 2. Check Pedestrian Collisions
         for ped in pedestrians {
-            // If pedestrian is stopped outside our lane, safe!
-            let pedWidth: CGFloat = 0.11
-            let pedHeight: CGFloat = 0.08
+            let pedWidth: CGFloat = 0.16
+            let pedHeight: CGFloat = 0.06
             let pMinX = ped.x - pedWidth / 2.0
             let pMaxX = ped.x + pedWidth / 2.0
             let pMinY = ped.y - pedHeight / 2.0
             let pMaxY = ped.y + pedHeight / 2.0
             
-            if !(playerMaxX < pMinX || playerMinX > pMaxX || playerMaxY < pMinY || playerMinY > pMaxY) {
+            let isColliding = !(playerMaxX < pMinX || playerMinX > pMaxX || playerMaxY < pMinY || playerMinY > pMaxY)
+            
+            if isColliding {
                 let note = ped.isAlerted ? "Crashed into a waiting pedestrian!" : "Hit a pedestrian because you didn't HONK!"
                 triggerGameOver(
                     reason: note,

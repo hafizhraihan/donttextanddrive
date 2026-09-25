@@ -68,7 +68,7 @@ struct RoadCanvasView: View {
                                     .overlay(Capsule().stroke(popup.color, lineWidth: 1.5))
                             )
                             .position(
-                                x: w / 2.0 + popup.x * (w * 0.42),
+                                x: w / 2.0 + popup.x * (w * 0.40),
                                 y: h * popup.y
                             )
                             .opacity(popup.opacity)
@@ -588,7 +588,7 @@ struct PedestrianSpriteView: View {
     let roadHeight: CGFloat
     
     var body: some View {
-        let posX = roadWidth / 2.0 + ped.x * (roadWidth * 0.42)
+        let posX = roadWidth / 2.0 + ped.x * (roadWidth * 0.40)
         let posY = roadHeight * ped.y
         
         ZStack {
