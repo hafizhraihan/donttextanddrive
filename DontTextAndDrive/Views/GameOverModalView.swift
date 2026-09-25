@@ -85,8 +85,6 @@ struct GameOverModalView: View {
                     StatBox(title: "TEXTS SENT", value: "\(engine.stats.textsCompleted)", icon: "checkmark.message.fill", color: .yellow)
                     StatBox(title: "ACCURACY", value: String(format: "%.0f%%", engine.stats.accuracyPercentage), icon: "character.cursor.ibeam", color: .yellow)
                     StatBox(title: "TYPOS MADE", value: "\(engine.stats.typosCount)", icon: "exclamationmark.bubble.fill", color: .yellow)
-                    StatBox(title: "PEDESTRIANS SAVED", value: "\(engine.stats.pedestriansSaved)", icon: "figure.walk.circle.fill", color: .yellow)
-                    StatBox(title: "BEST RECORD", value: "\(engine.stats.highScore)", icon: "trophy.fill", color: .yellow)
                 }
                 
                 // Action Buttons

@@ -113,24 +113,6 @@ struct RoadCanvasView: View {
                             
                             Spacer()
                             
-                            // Calibrate Gyro Pill
-                            Button(action: {
-                                engine.motionManager.calibrate()
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "gyroscope")
-                                        .font(.system(size: 11))
-                                    Text("CALIBRATE")
-                                        .font(.system(size: 9, weight: .black))
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.cyan.opacity(0.3))
-                                .cornerRadius(10)
-                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cyan.opacity(0.5), lineWidth: 1))
-                            }
-                            
                             // Distance Tracker
                             HStack(spacing: 4) {
                                 Image(systemName: "road.lanes")
