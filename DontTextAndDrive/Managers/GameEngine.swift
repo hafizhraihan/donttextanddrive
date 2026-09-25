@@ -236,8 +236,15 @@ final class GameEngine {
         
         if speedFactor > 0 {
             roadScrollOffset += currentRoadPixelsPerSec * CGFloat(dt)
-            stats.distanceMeters += (currentSpeedKmh * 1000.0 / 3600.0) * dt
-            stats.addScore(Int(10.0 * dt * stats.currentMultiplier), multiplier: 1.0)
+            let distDelta = (currentSpeedKmh * 1000.0 / 3600.0) * dt
+            let prevMeters = stats.distanceMeters
+            stats.distanceMeters += distDelta
+            
+            // Award 1 point every 25 meters driven
+            let earnedDistPoints = Int(stats.distanceMeters / 25.0) - Int(prevMeters / 25.0)
+            if earnedDistPoints > 0 {
+                stats.addScore(earnedDistPoints, multiplier: 1.0)
+            }
         }
         
         // 4. Honk Wave Animation & Cooldown
@@ -262,8 +269,8 @@ final class GameEngine {
                 trafficVehicles[i].passedPlayer = true
                 if abs(trafficVehicles[i].x - playerX) < 0.35 {
                     stats.closeCalls += 1
-                    addScorePopup(text: "CLOSE CALL! +50", color: .yellow)
-                    stats.addScore(50, multiplier: stats.currentMultiplier)
+                    addScorePopup(text: "CLOSE CALL! +5", color: .yellow)
+                    stats.addScore(5, multiplier: stats.currentMultiplier)
                 }
             }
             
@@ -344,8 +351,8 @@ final class GameEngine {
                 if !pedestrians[i].isAlerted {
                     pedestrians[i].triggerHonkAlert()
                     stats.pedestriansSaved += 1
-                    stats.addScore(150, multiplier: stats.currentMultiplier)
-                    addScorePopup(text: "PEDESTRIAN STOPPED! 🛑 +150", color: .green)
+                    stats.addScore(10, multiplier: stats.currentMultiplier)
+                    addScorePopup(text: "PEDESTRIAN STOPPED! 🛑 +10", color: .green)
                     alertedCount += 1
                 }
             }
@@ -463,7 +470,7 @@ final class GameEngine {
             if isMatch {
                 typedText.append(targetChar)
                 soundManager.playKeyClick()
-                stats.addScore(15, multiplier: stats.currentMultiplier)
+                stats.addScore(1, multiplier: 1.0)
             } else {
                 // Monkeytype typo: record wrong letter, sound error buzz, trigger shake
                 typedText.append(char)
@@ -525,7 +532,7 @@ final class GameEngine {
         
         // Red light safe stop bonus
         if trafficLightPhase == .red {
-            let redBonus = 100
+            let redBonus = 10
             stats.addScore(redBonus, multiplier: stats.currentMultiplier)
             addScorePopup(text: "SAFE STOP BONUS! 🚦 +\(redBonus)", color: .green)
         }
@@ -533,23 +540,23 @@ final class GameEngine {
         // Tiered scoring based on typo accuracy
         if messageAccuracy >= 0.95 && typedText.count >= target.count {
             // Tier 1: Perfect / Flawless (100% or near 100%)
-            stats.currentMultiplier = min(4.0, stats.currentMultiplier + 0.5)
+            stats.currentMultiplier = min(2.0, stats.currentMultiplier + 0.1)
             let earned = Int(Double(prompt.pointsBonus) * stats.currentMultiplier)
             stats.addScore(earned, multiplier: 1.0)
             addScorePopup(text: "PERFECT TEXT! ✨ +\(earned)", color: .cyan)
             soundManager.playMessageSent()
         } else if messageAccuracy >= 0.70 {
             // Tier 2: Good with minor typos (70% - 94%)
-            stats.currentMultiplier = min(4.0, stats.currentMultiplier + 0.2)
-            let baseBonus = max(25, Int(Double(prompt.pointsBonus) * 0.70))
+            stats.currentMultiplier = min(2.0, stats.currentMultiplier + 0.05)
+            let baseBonus = max(5, Int(Double(prompt.pointsBonus) * 0.70))
             let earned = Int(Double(baseBonus) * stats.currentMultiplier)
             stats.addScore(earned, multiplier: 1.0)
             addScorePopup(text: "TYPO TEXT! 💬 +\(earned)", color: .green)
             soundManager.playMessageSent()
         } else if messageAccuracy >= 0.40 {
             // Tier 3: Messy / Typos (40% - 69%)
-            stats.currentMultiplier = max(1.0, stats.currentMultiplier - 0.25)
-            let baseBonus = max(15, Int(Double(prompt.pointsBonus) * 0.40))
+            stats.currentMultiplier = max(1.0, stats.currentMultiplier - 0.1)
+            let baseBonus = max(3, Int(Double(prompt.pointsBonus) * 0.40))
             let earned = Int(Double(baseBonus) * stats.currentMultiplier)
             stats.addScore(earned, multiplier: 1.0)
             addScorePopup(text: "MESSY TYPO! ⚠️ +\(earned)", color: .yellow)
@@ -557,7 +564,7 @@ final class GameEngine {
         } else {
             // Tier 4: Mangled (< 40% accuracy)
             stats.currentMultiplier = 1.0 // reset combo
-            let earned = max(10, Int(Double(prompt.pointsBonus) * 0.15))
+            let earned = max(2, Int(Double(prompt.pointsBonus) * 0.15))
             stats.addScore(earned, multiplier: 1.0)
             addScorePopup(text: "MANGLED TEXT! 🤡 +\(earned)", color: .orange)
             soundManager.playMessageSent()

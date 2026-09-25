@@ -83,7 +83,7 @@ struct GameOverModalView: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                     StatBox(title: "DISTANCE", value: "\(Int(engine.stats.distanceMeters)) m", icon: "road.lanes", color: .yellow)
                     StatBox(title: "TEXTS SENT", value: "\(engine.stats.textsCompleted)", icon: "checkmark.message.fill", color: .yellow)
-                    StatBox(title: "ACCURACY", value: String(format: "%.0f%%", engine.stats.accuracyPercentage), icon: "character.cursor.ibeam", color: .yellow)
+                    StatBox(title: "ACCURACY", value: engine.stats.accuracyDisplay, icon: "character.cursor.ibeam", color: .yellow)
                     StatBox(title: "TYPOS MADE", value: "\(engine.stats.typosCount)", icon: "exclamationmark.bubble.fill", color: .yellow)
                 }
                 

@@ -39,7 +39,7 @@ struct MessagePrompt: Identifiable, Equatable {
             incomingText: "WHERE is the Q3 slide deck?! Board meeting in 5 mins!",
             targetReply: "Sending right now boss!",
             urgencySeconds: 14.0,
-            pointsBonus: 600
+            pointsBonus: 30
         ),
         MessagePrompt(
             contactName: "Mom",
@@ -47,7 +47,7 @@ struct MessagePrompt: Identifiable, Equatable {
             incomingText: "Are you driving safely? Did you eat warm soup?",
             targetReply: "Yes mom almost home love u",
             urgencySeconds: 16.0,
-            pointsBonus: 500
+            pointsBonus: 25
         ),
         MessagePrompt(
             contactName: "Sarah (Crush)",
@@ -55,7 +55,7 @@ struct MessagePrompt: Identifiable, Equatable {
             incomingText: "Are you still coming over tonight or are you busy?",
             targetReply: "On my way right now!",
             urgencySeconds: 12.0,
-            pointsBonus: 750
+            pointsBonus: 40
         ),
         MessagePrompt(
             contactName: "Landlord",
@@ -63,7 +63,7 @@ struct MessagePrompt: Identifiable, Equatable {
             incomingText: "Rent was due yesterday. Where is the transfer?",
             targetReply: "Just transferred check now",
             urgencySeconds: 13.0,
-            pointsBonus: 650
+            pointsBonus: 30
         ),
         MessagePrompt(
             contactName: "Best Friend",
@@ -71,7 +71,7 @@ struct MessagePrompt: Identifiable, Equatable {
             incomingText: "Bro our ranked game starts in 2 mins, lock in!",
             targetReply: "Logging in 2 mins bro",
             urgencySeconds: 11.0,
-            pointsBonus: 800
+            pointsBonus: 35
         ),
         MessagePrompt(
             contactName: "Delivery Rider",
@@ -79,7 +79,7 @@ struct MessagePrompt: Identifiable, Equatable {
             incomingText: "I am downstairs with pizza, gate is locked!",
             targetReply: "Coming down in 3 mins!",
             urgencySeconds: 12.0,
-            pointsBonus: 550
+            pointsBonus: 25
         ),
         MessagePrompt(
             contactName: "Roommate",
@@ -87,7 +87,7 @@ struct MessagePrompt: Identifiable, Equatable {
             incomingText: "Whose turn is it to take out the gross trash?",
             targetReply: "I will do it tonight promise",
             urgencySeconds: 14.0,
-            pointsBonus: 500
+            pointsBonus: 20
         ),
         MessagePrompt(
             contactName: "Bank Alert",
@@ -95,7 +95,7 @@ struct MessagePrompt: Identifiable, Equatable {
             incomingText: "Unusual charge $499.99 detected. Confirm?",
             targetReply: "NO cancel immediately",
             urgencySeconds: 10.0,
-            pointsBonus: 900
+            pointsBonus: 45
         )
     ]
     

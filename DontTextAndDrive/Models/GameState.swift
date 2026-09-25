@@ -36,10 +36,18 @@ struct GameStats {
     var typosCount: Int = 0
     var crashInfo: CrashInfo = .default
     
-    var accuracyPercentage: Double {
-        guard totalKeystrokes > 0 else { return 100.0 }
+    var accuracyPercentage: Double? {
+        guard textsCompleted > 0 && totalKeystrokes > 0 else { return nil }
         let valid = max(0, totalKeystrokes - typosCount)
         return (Double(valid) / Double(totalKeystrokes)) * 100.0
+    }
+    
+    var accuracyDisplay: String {
+        if let acc = accuracyPercentage {
+            return String(format: "%.0f%%", acc)
+        } else {
+            return "-"
+        }
     }
     
     mutating func addScore(_ points: Int, multiplier: Double = 1.0) {
