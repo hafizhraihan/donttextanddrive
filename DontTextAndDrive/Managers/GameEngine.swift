@@ -83,9 +83,8 @@ final class GameEngine {
         resetGame()
         status = .playing
         motionManager.start()
-        motionManager.calibrate()
         
-        // Spawn first message after 1.5 seconds
+        // Spawn first message after 1.2 seconds
         promptQueueTimer = 1.2
     }
     

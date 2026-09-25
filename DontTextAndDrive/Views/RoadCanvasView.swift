@@ -301,10 +301,12 @@ struct RoadCanvasView: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
+                        guard !engine.motionManager.isMotionAvailable else { return }
                         let normVal = (value.location.x / w) * 2.0 - 1.0
                         engine.motionManager.setTouchSteering(normVal)
                     }
                     .onEnded { _ in
+                        guard !engine.motionManager.isMotionAvailable else { return }
                         engine.motionManager.releaseTouchSteering()
                     }
             )

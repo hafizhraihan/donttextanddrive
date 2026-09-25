@@ -16,14 +16,17 @@ final class MotionManager {
     // Raw lateral gravity reading
     var rawRoll: Double = 0.0
     
-    // Auto-centering adaptive neutral offset
-    var adaptiveNeutralOffset: Double = 0.0
+    // Calibrated neutral baseline offset (persisted in UserDefaults across sessions & plays)
+    var neutralOffset: Double = UserDefaults.standard.double(forKey: "DTAD_NeutralOffset")
     
-    // Maximum comfortable tilt in radians (sin(20°) ≈ 0.342)
-    var maxTiltRange: Double = 0.34
+    // Smoothed roll baseline for noise-free manual calibration
+    private var smoothedRoll: Double = 0.0
     
-    // Minimal deadband for finger tremors (~0.8°)
-    var deadzone: Double = 0.015
+    // Maximum comfortable tilt angle in radians (sin(16°) ≈ 0.28)
+    var maxTiltRange: Double = 0.28
+    
+    // Stable deadzone around center (~1.5°) to prevent twitching when holding straight
+    var deadzone: Double = 0.025
     
     // Dynamic sensitivity multiplier
     var sensitivity: Double = 1.0
@@ -31,12 +34,12 @@ final class MotionManager {
     // Whether motion hardware is detected
     var isMotionAvailable: Bool = false
     
-    // Manual touch steering fallback (when dragging on-screen controls)
+    // Manual touch steering fallback (for simulator or explicit touch drag)
     var isTouchControlActive: Bool = false
     var manualTouchSteer: CGFloat = 0.0
     
     private var isUpdating: Bool = false
-    private var isInitialSampleCaptured: Bool = false
+    private var hasFirstSample: Bool = false
     
     init() {
         checkAvailability()
@@ -56,7 +59,6 @@ final class MotionManager {
         #if canImport(CoreMotion) && !os(macOS)
         if motionManager.isDeviceMotionAvailable {
             motionManager.deviceMotionUpdateInterval = 1.0 / 60.0
-            // startDeviceMotionUpdates with main queue for 60Hz ultra-low latency response
             motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
                 guard let self = self, let motion = motion else { return }
                 self.processDeviceMotion(motion)
@@ -85,23 +87,30 @@ final class MotionManager {
         isUpdating = false
     }
     
-    /// Auto-calibrates immediately to the current hand orientation
+    /// Calibrates neutral to the current smoothed resting angle and persists it
     func calibrate() {
-        adaptiveNeutralOffset = rawRoll
-        isInitialSampleCaptured = true
+        neutralOffset = smoothedRoll
+        UserDefaults.standard.set(neutralOffset, forKey: "DTAD_NeutralOffset")
+    }
+    
+    /// Resets calibration back to true physical upright (0.0)
+    func resetCalibration() {
+        neutralOffset = 0.0
+        UserDefaults.standard.set(0.0, forKey: "DTAD_NeutralOffset")
     }
     
     #if canImport(CoreMotion) && !os(macOS)
     private func processDeviceMotion(_ motion: CMDeviceMotion) {
         // In portrait mode, gravity.x measures pure lateral tilt relative to Earth's gravity vector.
-        // It is drift-free, absolute, and independent of whether the phone is tilted toward or away from the face.
         let gravX = motion.gravity.x
         rawRoll = gravX
         
-        if !isInitialSampleCaptured {
-            // First frame auto-snap neutral position
-            adaptiveNeutralOffset = gravX
-            isInitialSampleCaptured = true
+        if !hasFirstSample {
+            smoothedRoll = gravX
+            hasFirstSample = true
+        } else {
+            // Continuous low-pass filter for smooth resting reference
+            smoothedRoll = smoothedRoll * 0.90 + gravX * 0.10
         }
         
         guard !isTouchControlActive else {
@@ -109,18 +118,8 @@ final class MotionManager {
             return
         }
         
-        // Dynamic Adaptive Auto-Centering (Self-Calibrating Neutral Learning):
-        // When the device is held relatively steady (low rotational speed) and near center,
-        // gently adapt the resting neutral point to accommodate shifting hand positions seamlessly.
-        let rotSpeedZ = abs(motion.rotationRate.z)
-        let distanceFromNeutral = abs(gravX - adaptiveNeutralOffset)
-        if rotSpeedZ < 0.18 && distanceFromNeutral < 0.15 {
-            // Gentle learning rate: smoothly tracks resting position over 2-3 seconds
-            adaptiveNeutralOffset += (gravX - adaptiveNeutralOffset) * 0.015
-        }
-        
-        // Calculate true relative tilt from adaptive neutral
-        let delta = gravX - adaptiveNeutralOffset
+        // Deterministic relative tilt from the persistent neutral baseline
+        let delta = gravX - neutralOffset
         
         var steer: Double = 0.0
         if abs(delta) > deadzone {
@@ -129,13 +128,13 @@ final class MotionManager {
             let normalized = min(1.0, max(0.0, activeMagnitude))
             
             // Progressive ergonomic curve: smooth precision near center, responsive sharp turns on full tilt
-            steer = sign * pow(normalized, 1.22) * sensitivity
+            steer = sign * pow(normalized, 1.15) * sensitivity
         }
         
         let targetTilt = CGFloat(max(-1.0, min(1.0, steer)))
         
-        // 60Hz Exponential low-pass smoothing filter (eradicates hand jitter without perceived latency)
-        let alpha: CGFloat = 0.28
+        // 60Hz Exponential low-pass filter for silky smooth response without jitter
+        let alpha: CGFloat = 0.25
         tilt = tilt * (1.0 - alpha) + targetTilt * alpha
     }
     
@@ -143,9 +142,11 @@ final class MotionManager {
         let currentX = data.acceleration.x
         rawRoll = currentX
         
-        if !isInitialSampleCaptured {
-            adaptiveNeutralOffset = currentX
-            isInitialSampleCaptured = true
+        if !hasFirstSample {
+            smoothedRoll = currentX
+            hasFirstSample = true
+        } else {
+            smoothedRoll = smoothedRoll * 0.90 + currentX * 0.10
         }
         
         guard !isTouchControlActive else {
@@ -153,16 +154,16 @@ final class MotionManager {
             return
         }
         
-        let delta = currentX - adaptiveNeutralOffset
+        let delta = currentX - neutralOffset
         var steer: Double = 0.0
         if abs(delta) > deadzone {
             let sign = delta > 0 ? 1.0 : -1.0
             let normalized = min(1.0, max(0.0, (abs(delta) - deadzone) / (maxTiltRange - deadzone)))
-            steer = sign * pow(normalized, 1.22) * sensitivity
+            steer = sign * pow(normalized, 1.15) * sensitivity
         }
         
         let targetTilt = CGFloat(max(-1.0, min(1.0, steer)))
-        let alpha: CGFloat = 0.28
+        let alpha: CGFloat = 0.25
         tilt = tilt * (1.0 - alpha) + targetTilt * alpha
     }
     #endif
@@ -181,3 +182,4 @@ final class MotionManager {
         }
     }
 }
+
