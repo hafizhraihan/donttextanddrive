@@ -109,7 +109,9 @@ struct GameOverModalView: View {
                     }
                     
                     Button(action: {
-                        engine.status = .menu
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            engine.goToMenu()
+                        }
                     }) {
                         Text("MAIN MENU")
                             .font(.system(size: 13, weight: .bold))

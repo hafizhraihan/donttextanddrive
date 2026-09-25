@@ -97,6 +97,13 @@ final class GameEngine {
         }
     }
     
+    func goToMenu() {
+        resetGame()
+        status = .menu
+        screenShake = 0.0
+        typingErrorShake = 0.0
+    }
+    
     func resetGame() {
         stats.reset()
         playerX = 0.0
@@ -139,20 +146,14 @@ final class GameEngine {
             roadScrollOffset += 160.0 * CGFloat(dt)
             playerX = 0.0
             playerSteerAngle = 0.0
+            screenShake = 0.0
+            typingErrorShake = 0.0
             return
         }
         
         guard status == .playing else { return }
         
-        // 1. Update Player Steering from Gyro / Touch
-        let tilt = motionManager.tilt
-        playerSteerAngle = tilt * 28.0 // Rotate car visually up to 28 degrees
-        
-        let steerSpeed: CGFloat = 2.4
-        playerX += tilt * steerSpeed * CGFloat(dt)
-        playerX = max(-0.85, min(0.85, playerX))
-        
-        // 2. Traffic Light (Lampu Merah) State Machine & Deceleration / Acceleration
+        // 1. Traffic Light (Lampu Merah) State Machine & Deceleration / Acceleration
         var speedFactor: CGFloat = 1.0
         switch trafficLightPhase {
         case .none:
@@ -205,6 +206,18 @@ final class GameEngine {
                 trafficLightY = -0.5
                 trafficLightCooldown = Double.random(in: 18.0...26.0)
             }
+        }
+        
+        // 2. Update Player Steering from Gyro / Touch (Steering disabled when stationary at red light)
+        let tilt = motionManager.tilt
+        if speedFactor > 0 {
+            playerSteerAngle = tilt * 28.0 * min(1.0, speedFactor * 1.5)
+            let steerSpeed: CGFloat = 2.4
+            playerX += tilt * steerSpeed * CGFloat(dt) * speedFactor
+            playerX = max(-0.85, min(0.85, playerX))
+        } else {
+            // Stopped at Red Light: car remains stationary in lane
+            playerSteerAngle = tilt * 8.0
         }
         
         // 3. Road Speed & Distance Progression (Starts at 30 KM/H, matching Menu speed)
