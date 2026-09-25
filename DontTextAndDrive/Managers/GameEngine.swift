@@ -135,6 +135,12 @@ final class GameEngine {
         pedestrianSpawnTimer = 3.0
     }
     
+    // MARK: - Speed Calculations
+    private func calculateRoadSpeedPixelsPerSec(speedKmh: Double, speedFactor: CGFloat) -> CGFloat {
+        let basePixelsAt60Kmh: CGFloat = 340.0
+        return basePixelsAt60Kmh * CGFloat(speedKmh / 60.0) * speedFactor
+    }
+    
     // MARK: - Main Game Loop (called from TimelineView / DisplayLink)
     
     func update(currentTime: Date) {
@@ -142,8 +148,10 @@ final class GameEngine {
         lastUpdateTime = currentTime
         
         if status == .menu {
-            stats.currentSpeedKmh = 30.0
-            roadScrollOffset += 160.0 * CGFloat(dt)
+            let menuSpeedKmh = 60.0
+            stats.currentSpeedKmh = menuSpeedKmh
+            let roadSpeed = calculateRoadSpeedPixelsPerSec(speedKmh: menuSpeedKmh, speedFactor: 1.0)
+            roadScrollOffset += roadSpeed * CGFloat(dt)
             playerX = 0.0
             playerSteerAngle = 0.0
             screenShake = 0.0
@@ -220,11 +228,11 @@ final class GameEngine {
             playerSteerAngle = tilt * 8.0
         }
         
-        // 3. Road Speed & Distance Progression (Starts at 30 KM/H, matching Menu speed)
-        let targetSpeedKmh = 30.0 + min(90.0, stats.distanceMeters * 0.04)
+        // 3. Road Speed & Distance Progression (Starts at exact same 60 KM/H as Menu)
+        let targetSpeedKmh = 60.0 + min(70.0, stats.distanceMeters * 0.04)
         let currentSpeedKmh = targetSpeedKmh * Double(speedFactor)
         stats.currentSpeedKmh = currentSpeedKmh
-        let currentRoadPixelsPerSec = 160.0 * CGFloat(targetSpeedKmh / 30.0) * speedFactor
+        let currentRoadPixelsPerSec = calculateRoadSpeedPixelsPerSec(speedKmh: targetSpeedKmh, speedFactor: speedFactor)
         
         if speedFactor > 0 {
             roadScrollOffset += currentRoadPixelsPerSec * CGFloat(dt)
