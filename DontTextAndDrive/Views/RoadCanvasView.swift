@@ -45,10 +45,10 @@ struct RoadCanvasView: View {
                     )
                 }
                 
-                // 6. Player's Compact Car
+                // 6. Player's Compact Car (Exact same position, size, and design in menu and gameplay)
                 PlayerCarView(
                     xNorm: engine.playerX,
-                    yNorm: engine.status == .menu ? 0.65 : 0.80,
+                    yNorm: 0.80,
                     steerAngle: engine.playerSteerAngle,
                     roadWidth: w,
                     roadHeight: h

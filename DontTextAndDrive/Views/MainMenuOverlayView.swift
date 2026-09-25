@@ -57,7 +57,7 @@ struct MainMenuOverlayView: View {
                     .onEnded { _ in isStartPressed = false }
             )
             .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            .padding(.bottom, 10)
         }
     }
 }

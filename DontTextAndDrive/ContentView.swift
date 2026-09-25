@@ -10,28 +10,31 @@ struct ContentView: View {
                 Color(red: 0.05, green: 0.06, blue: 0.08)
                     .ignoresSafeArea()
                 
-                if engine.status == .menu {
-                    // Clean Main Menu: Road with cruising car in background + Logo SVG at top + START button at bottom
-                    ZStack {
-                        RoadCanvasView(engine: engine)
-                            .ignoresSafeArea()
-                        
-                        MainMenuOverlayView(engine: engine)
-                    }
-                    .transition(.opacity)
-                } else {
-                    // Active Gameplay: Road Simulation + Bottom Phone Texting Dashboard
-                    VStack(spacing: 4) {
-                        RoadCanvasView(engine: engine)
-                            .frame(maxWidth: .infinity)
-                            .frame(maxHeight: .infinity)
-                        
+                // Unified Layout: RoadCanvasView maintains the EXACT same size, position, and aspect ratio
+                VStack(spacing: 4) {
+                    RoadCanvasView(engine: engine)
+                        .frame(maxWidth: .infinity)
+                        .frame(maxHeight: .infinity)
+                    
+                    if engine.status == .playing || engine.status == .paused {
                         PhoneDashboardView(engine: engine)
                             .padding(.bottom, 2)
+                            .transition(.opacity)
+                    } else {
+                        // In Menu: Reserve the exact bottom area for the START button, keeping the road canvas at its exact gameplay size & position
+                        Color.clear
+                            .frame(height: 75)
+                            .padding(.bottom, 2)
                     }
-                    .padding(.top, 2)
-                    .padding(.horizontal, 4)
-                    .transition(.opacity)
+                }
+                .padding(.top, 2)
+                .padding(.horizontal, 4)
+                
+                // Main Menu Overlay: Floating Logo at Top, START button at Bottom
+                if engine.status == .menu {
+                    MainMenuOverlayView(engine: engine)
+                        .transition(.opacity)
+                        .zIndex(10)
                 }
                 
                 // Game Over Modal Overlay
