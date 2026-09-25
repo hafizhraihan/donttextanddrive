@@ -8,99 +8,41 @@ struct PhoneDashboardView: View {
     @State private var nativeInput: String = ""
     
     var body: some View {
-        VStack(spacing: 5) {
-            // 1. Messages Header & Urgency Bar
+        VStack(spacing: 4) {
+            // 1. Urgency Progress Bar (Top)
             if let prompt = engine.activePrompt {
-                HStack(spacing: 6) {
-                    // Contact Avatar
-                    ZStack {
-                        Circle()
-                            .fill(LinearGradient(colors: [.indigo, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 26, height: 26)
-                        Image(systemName: prompt.avatarEmoji)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(prompt.contactName)
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                        Text(prompt.incomingText)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
-                    }
-                    
-                    Spacer()
-                    
-                    // Urgency Timer / Safe Zone Pill
-                    if engine.trafficLightPhase == .red {
-                        HStack(spacing: 4) {
-                            Circle().fill(Color.red).frame(width: 7, height: 7).shadow(color: .red, radius: 3)
-                            Text("PAUSED (RED LIGHT)")
-                                .font(.system(size: 10, weight: .heavy, design: .rounded))
-                                .foregroundColor(.green)
-                        }
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(Color.green.opacity(0.2))
-                        .cornerRadius(8)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.green.opacity(0.5), lineWidth: 1))
-                    } else {
-                        HStack(spacing: 3) {
-                            Image(systemName: "timer")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
-                            Text(String(format: "%.1fs", max(0, engine.messageTimeRemaining)))
-                                .font(.system(size: 12, weight: .heavy, design: .monospaced))
-                                .foregroundColor(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
-                        }
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds).opacity(0.2))
-                        .cornerRadius(8)
-                    }
-                }
-                .padding(.horizontal, 10)
-                .padding(.top, 4)
-                
-                // Urgency Progress Bar
                 GeometryReader { barGeo in
                     let progress = engine.trafficLightPhase == .red ? 1.0 : min(1.0, max(0.0, engine.messageTimeRemaining / prompt.urgencySeconds))
                     ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.1)).frame(height: 3)
+                        Capsule()
+                            .fill(Color.white.opacity(0.12))
+                            .frame(height: 3.5)
+                        
                         Capsule()
                             .fill(engine.trafficLightPhase == .red ? Color.green : urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
-                            .frame(width: barGeo.size.width * CGFloat(progress), height: 3)
+                            .frame(width: barGeo.size.width * CGFloat(progress), height: 3.5)
+                            .animation(.linear(duration: 0.1), value: progress)
                     }
                 }
-                .frame(height: 3)
+                .frame(height: 3.5)
                 .padding(.horizontal, 10)
+                .padding(.top, 4)
             } else {
-                // Idle / Waiting Header
-                HStack(spacing: 6) {
-                    Image(systemName: "ellipsis.message.fill")
-                        .foregroundColor(.cyan)
-                        .font(.system(size: 13))
-                    Text("Incoming texts will appear here...")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.gray)
-                    Spacer()
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                Capsule()
+                    .fill(Color.white.opacity(0.08))
+                    .frame(height: 3.5)
+                    .padding(.horizontal, 10)
+                    .padding(.top, 4)
             }
             
-            // 2. Monkeytype Prompt & Input Bar (Directly Above Apple Keyboard)
-            if let prompt = engine.activePrompt {
-                HStack(spacing: 8) {
+            // 2. Main Row: Icon + What to Type + Timer (in place of Send button)
+            HStack(spacing: 8) {
+                if let prompt = engine.activePrompt {
                     Image(systemName: "pencil.line")
                         .foregroundColor(engine.hasTypingError ? .red : .cyan)
-                        .font(.system(size: 12))
+                        .font(.system(size: 13, weight: .bold))
                     
-                    // Monkeytype Character-by-Character Renderer
+                    // Monkeytype Character-by-Character Renderer (What to Type)
                     ScrollView(.horizontal, showsIndicators: false) {
                         MonkeytypePromptText(
                             target: prompt.targetReply,
@@ -110,83 +52,107 @@ struct PhoneDashboardView: View {
                     
                     Spacer()
                     
-                    // SEND Action Button
-                    Button(action: {
-                        engine.sendCurrentMessage()
-                        nativeInput = ""
-                        isKeyboardFocused = true
-                    }) {
-                        HStack(spacing: 3) {
-                            Text("SEND")
-                                .font(.system(size: 12, weight: .heavy))
-                            Image(systemName: engine.isTextCompleteAndValid ? "checkmark.circle.fill" : "arrow.up.circle.fill")
-                                .font(.system(size: 13))
+                    // Timer Badge (In Place of Send Button)
+                    if engine.trafficLightPhase == .red {
+                        HStack(spacing: 4) {
+                            Circle().fill(Color.red).frame(width: 6, height: 6).shadow(color: .red, radius: 3)
+                            Text("PAUSED")
+                                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                .foregroundColor(.green)
                         }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .frame(height: 32)
-                        .background(
-                            engine.isTextCompleteAndValid ? Color.green :
-                            (!engine.typedText.isEmpty ? Color.blue : Color.gray.opacity(0.35))
-                        )
+                        .padding(.horizontal, 8)
+                        .frame(height: 28)
+                        .background(Color.green.opacity(0.2))
                         .cornerRadius(8)
-                        .scaleEffect(!engine.typedText.isEmpty ? 1.04 : 1.0)
-                        .animation(.spring(response: 0.2), value: !engine.typedText.isEmpty)
-                    }
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.black.opacity(0.5))
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(
-                            engine.hasTypingError ? Color.red.opacity(0.8) :
-                            (engine.isTextCompleteAndValid ? Color.green.opacity(0.8) : Color.cyan.opacity(0.35)),
-                            lineWidth: engine.hasTypingError || engine.isTextCompleteAndValid ? 1.5 : 1.0
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.green.opacity(0.5), lineWidth: 1))
+                    } else {
+                        HStack(spacing: 3) {
+                            Image(systemName: "timer")
+                                .font(.system(size: 10, weight: .bold))
+                            Text(String(format: "%.1fs", max(0, engine.messageTimeRemaining)))
+                                .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                        }
+                        .foregroundColor(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds))
+                        .padding(.horizontal, 8)
+                        .frame(height: 28)
+                        .background(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds).opacity(0.18))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(urgencyColor(time: engine.messageTimeRemaining, maxTime: prompt.urgencySeconds).opacity(0.4), lineWidth: 1)
                         )
-                )
-                .offset(
-                    x: engine.typingErrorShake > 0 ? CGFloat.random(in: -engine.typingErrorShake * 4...engine.typingErrorShake * 4) : 0
-                )
-                .padding(.horizontal, 8)
-                .padding(.bottom, 4)
-                .onTapGesture {
+                    }
+                } else {
+                    // Idle / Waiting State
+                    Image(systemName: "ellipsis.bubble.fill")
+                        .foregroundColor(.cyan.opacity(0.7))
+                        .font(.system(size: 13))
+                    
+                    Text("Waiting for next message...")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.gray)
+                    
+                    Spacer()
+                    
+                    Text("—")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.gray.opacity(0.5))
+                        .padding(.horizontal, 8)
+                        .frame(height: 28)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.black.opacity(0.5))
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(
+                        engine.hasTypingError ? Color.red.opacity(0.8) :
+                        (engine.isTextCompleteAndValid ? Color.green.opacity(0.8) : Color.cyan.opacity(0.35)),
+                        lineWidth: engine.hasTypingError || engine.isTextCompleteAndValid ? 1.5 : 1.0
+                    )
+            )
+            .offset(
+                x: engine.typingErrorShake > 0 ? CGFloat.random(in: -engine.typingErrorShake * 4...engine.typingErrorShake * 4) : 0
+            )
+            .padding(.horizontal, 8)
+            .padding(.bottom, 4)
+            .onTapGesture {
+                isKeyboardFocused = true
+            }
+            
+            // Active Native Keyboard Input Channel
+            TextField("", text: $nativeInput)
+                .focused($isKeyboardFocused)
+                .autocorrectionDisabled(true)
+                .disableAutocapitalization()
+                .submitLabel(.send)
+                .onSubmit {
+                    engine.sendCurrentMessage()
+                    nativeInput = ""
                     isKeyboardFocused = true
                 }
-                
-                // Active Native Keyboard Input Channel
-                TextField("", text: $nativeInput)
-                    .focused($isKeyboardFocused)
-                    .autocorrectionDisabled(true)
-                    .disableAutocapitalization()
-                    .submitLabel(.send)
-                    .onSubmit {
-                        engine.sendCurrentMessage()
-                        nativeInput = ""
-                        isKeyboardFocused = true
-                    }
-                    .onChange(of: nativeInput) { oldValue, newValue in
-                        if newValue.count > oldValue.count {
-                            let added = newValue.suffix(newValue.count - oldValue.count)
-                            for char in added {
-                                engine.handleKeyInput(char)
-                            }
-                        } else if newValue.count < oldValue.count {
-                            let diff = oldValue.count - newValue.count
-                            for _ in 0..<diff {
-                                engine.handleBackspace()
-                            }
+                .onChange(of: nativeInput) { oldValue, newValue in
+                    if newValue.count > oldValue.count {
+                        let added = newValue.suffix(newValue.count - oldValue.count)
+                        for char in added {
+                            engine.handleKeyInput(char)
+                        }
+                    } else if newValue.count < oldValue.count {
+                        let diff = oldValue.count - newValue.count
+                        for _ in 0..<diff {
+                            engine.handleBackspace()
                         }
                     }
-                    .onChange(of: engine.typedText) { _, newTyped in
-                        if nativeInput != newTyped {
-                            nativeInput = newTyped
-                        }
+                }
+                .onChange(of: engine.typedText) { _, newTyped in
+                    if nativeInput != newTyped {
+                        nativeInput = newTyped
                     }
-                    .frame(width: 1, height: 1)
-                    .opacity(0.01)
-            }
+                }
+                .frame(width: 1, height: 1)
+                .opacity(0.01)
         }
         .background(
             RoundedRectangle(cornerRadius: 16)

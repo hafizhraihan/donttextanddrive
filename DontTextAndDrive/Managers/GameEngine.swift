@@ -489,6 +489,11 @@ final class GameEngine {
             typingErrorShake = 1.0
             soundManager.playTypoError()
         }
+        
+        // Auto-complete and send when the final character is typed
+        if typedText.count >= target.count {
+            sendCurrentMessage()
+        }
     }
     
     func handleBackspace() {

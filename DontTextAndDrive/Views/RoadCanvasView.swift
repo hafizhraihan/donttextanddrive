@@ -80,13 +80,13 @@ struct RoadCanvasView: View {
                 if engine.status == .playing || engine.status == .paused {
                     VStack(spacing: 8) {
                         HStack(alignment: .center, spacing: 8) {
-                            // Help / Menu
+                            // Home / Menu
                             Button(action: {
                                 withAnimation(.easeInOut(duration: 0.35)) {
                                     engine.goToMenu()
                                 }
                             }) {
-                                Image(systemName: "questionmark.circle.fill")
+                                Image(systemName: "house.circle.fill")
                                     .font(.system(size: 20))
                                     .foregroundColor(.cyan)
                             }

@@ -36,66 +36,98 @@ struct MessagePrompt: Identifiable, Equatable {
         MessagePrompt(
             contactName: "Boss",
             avatarEmoji: "briefcase.fill",
-            incomingText: "WHERE is the Q3 slide deck?! Board meeting in 5 mins!",
-            targetReply: "Sending right now boss!",
-            urgencySeconds: 14.0,
-            pointsBonus: 30
+            incomingText: "Where are you? Meeting is starting!",
+            targetReply: "driving right now",
+            urgencySeconds: 12.0,
+            pointsBonus: 25
         ),
         MessagePrompt(
             contactName: "Mom",
             avatarEmoji: "heart.fill",
-            incomingText: "Are you driving safely? Did you eat warm soup?",
-            targetReply: "Yes mom almost home love u",
-            urgencySeconds: 16.0,
-            pointsBonus: 25
+            incomingText: "Are you on your way home for dinner?",
+            targetReply: "on my way almost there",
+            urgencySeconds: 14.0,
+            pointsBonus: 30
         ),
         MessagePrompt(
-            contactName: "Sarah (Crush)",
+            contactName: "Sarah",
             avatarEmoji: "sparkles",
-            incomingText: "Are you still coming over tonight or are you busy?",
-            targetReply: "On my way right now!",
-            urgencySeconds: 12.0,
-            pointsBonus: 40
-        ),
-        MessagePrompt(
-            contactName: "Landlord",
-            avatarEmoji: "building.2.fill",
-            incomingText: "Rent was due yesterday. Where is the transfer?",
-            targetReply: "Just transferred check now",
-            urgencySeconds: 13.0,
+            incomingText: "Did you hit traffic on the bridge?",
+            targetReply: "stuck in heavy traffic",
+            urgencySeconds: 14.0,
             pointsBonus: 30
         ),
         MessagePrompt(
             contactName: "Best Friend",
             avatarEmoji: "gamecontroller.fill",
-            incomingText: "Bro our ranked game starts in 2 mins, lock in!",
-            targetReply: "Logging in 2 mins bro",
-            urgencySeconds: 11.0,
+            incomingText: "Bro are you at the lobby yet?",
+            targetReply: "cant text while driving",
+            urgencySeconds: 15.0,
             pointsBonus: 35
         ),
         MessagePrompt(
-            contactName: "Delivery Rider",
-            avatarEmoji: "box.truck.fill",
-            incomingText: "I am downstairs with pizza, gate is locked!",
-            targetReply: "Coming down in 3 mins!",
-            urgencySeconds: 12.0,
+            contactName: "Partner",
+            avatarEmoji: "house.fill",
+            incomingText: "When will you reach home?",
+            targetReply: "heading home now",
+            urgencySeconds: 13.0,
             pointsBonus: 25
         ),
         MessagePrompt(
-            contactName: "Roommate",
-            avatarEmoji: "house.fill",
-            incomingText: "Whose turn is it to take out the gross trash?",
-            targetReply: "I will do it tonight promise",
-            urgencySeconds: 14.0,
-            pointsBonus: 20
+            contactName: "Coworker",
+            avatarEmoji: "person.2.fill",
+            incomingText: "Client is asking for our ETA!",
+            targetReply: "five minutes away",
+            urgencySeconds: 13.0,
+            pointsBonus: 25
         ),
         MessagePrompt(
-            contactName: "Bank Alert",
-            avatarEmoji: "creditcard.fill",
-            incomingText: "Unusual charge $499.99 detected. Confirm?",
-            targetReply: "NO cancel immediately",
-            urgencySeconds: 10.0,
-            pointsBonus: 45
+            contactName: "Dad",
+            avatarEmoji: "car.fill",
+            incomingText: "Call me when you get a chance.",
+            targetReply: "will call when i park",
+            urgencySeconds: 14.0,
+            pointsBonus: 30
+        ),
+        MessagePrompt(
+            contactName: "Alex",
+            avatarEmoji: "clock.fill",
+            incomingText: "The movie starts in ten minutes!",
+            targetReply: "running late see you soon",
+            urgencySeconds: 15.0,
+            pointsBonus: 35
+        ),
+        MessagePrompt(
+            contactName: "Sister",
+            avatarEmoji: "bubble.left.fill",
+            incomingText: "Are you still near downtown?",
+            targetReply: "on the highway right now",
+            urgencySeconds: 14.0,
+            pointsBonus: 30
+        ),
+        MessagePrompt(
+            contactName: "David",
+            avatarEmoji: "phone.fill",
+            incomingText: "Can we talk about the project?",
+            targetReply: "at a red light talk soon",
+            urgencySeconds: 14.0,
+            pointsBonus: 30
+        ),
+        MessagePrompt(
+            contactName: "Sam",
+            avatarEmoji: "mappin.and.ellipse",
+            incomingText: "We are waiting outside for you!",
+            targetReply: "pulling up in two minutes",
+            urgencySeconds: 15.0,
+            pointsBonus: 35
+        ),
+        MessagePrompt(
+            contactName: "Manager",
+            avatarEmoji: "building.2.fill",
+            incomingText: "Did you head out for the venue?",
+            targetReply: "just left will be there soon",
+            urgencySeconds: 16.0,
+            pointsBonus: 40
         )
     ]
     
